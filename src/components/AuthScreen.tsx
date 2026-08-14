@@ -153,11 +153,39 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         msg = 'An account with this email address already exists. Please sign in instead.';
       } else if (err.code === 'auth/weak-password') {
         msg = 'Password should be at least 6 characters long.';
+      } else if (err.code === 'auth/operation-not-allowed') {
+        msg = 'Firebase Authentication "Email/Password" sign-in method is currently disabled in your Firebase Console. Please enable it in Firebase Console → Authentication → Sign-in method, or use Offline Practice Mode below.';
       }
       setError(msg);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOfflinePracticeBypass = () => {
+    const demoDoctor: UserProfile = {
+      uid: 'offline_doctor_demo',
+      name: doctorName.trim() || 'Dr. Mohamed Al-Sayed',
+      email: email.trim() || 'doctor@clinicpro.eg',
+      role: 'doctor',
+      specialty: specialty.trim() || 'Consultant Prosthodontist & Implantologist',
+      clinicId: 'clinic_primary_demo',
+      permissions: {
+        viewPatients: true,
+        editClinical: true,
+        editToothChart: true,
+        uploadViewImages: true,
+        manageAppointments: true,
+        viewFinancials: true,
+        viewPaymentAmounts: true,
+        recordPayments: true,
+        manageStaff: true,
+        accessSettings: true,
+        sendWhatsApp: true
+      }
+    };
+    localStorage.setItem('clinicpro_user_offline_doctor_demo', JSON.stringify(demoDoctor));
+    onAuthenticated(demoDoctor);
   };
 
   return (
@@ -214,9 +242,26 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-4">
           {error && (
-            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-bold flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <span>{error}</span>
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-bold flex flex-col gap-2.5">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{error}</span>
+              </div>
+              {error.includes('Firebase Authentication "Email/Password"') && (
+                <div className="pt-2 border-t border-rose-200/60 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={handleOfflinePracticeBypass}
+                    className="w-full py-2 px-3 bg-rose-700 text-white rounded-xl text-[11px] font-extrabold hover:bg-rose-800 active:scale-[0.99] transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Enter Clinic Dashboard in Offline Practice Mode
+                  </button>
+                  <p className="text-[10px] text-rose-600 font-medium text-center">
+                    (You can still manage patients, tooth charts, and financial reports locally)
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

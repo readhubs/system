@@ -15,13 +15,14 @@ import firebaseAppletConfig from '../../firebase-applet-config.json';
 const rawConfig = (firebaseAppletConfig as any) || {};
 
 export const firebaseConfig = {
-  projectId: rawConfig.projectId || "gen-lang-client-0785272696",
-  appId: rawConfig.appId || "1:43970059143:web:2ee5632b527f5f74fe9122",
-  apiKey: rawConfig.apiKey || "AIzaSyA9h-DQkd60vi1ROvocQzfOaUHP4XGxIdA",
-  authDomain: rawConfig.authDomain || "gen-lang-client-0785272696.firebaseapp.com",
-  firestoreDatabaseId: rawConfig.firestoreDatabaseId || "ai-studio-clinicproegyptde-9cbae89b-76e3-4580-b646-f3116460b2bd",
-  storageBucket: rawConfig.storageBucket || "gen-lang-client-0785272696.firebasestorage.app",
-  messagingSenderId: rawConfig.messagingSenderId || "43970059143"
+  projectId: rawConfig.projectId || "clinical-mang",
+  appId: rawConfig.appId || "1:617272364959:web:432a393e7f295c7051f7aa",
+  apiKey: rawConfig.apiKey || "AIzaSyBs8hFhSfVhJ1dyNOATBb9JlNw6cBSSsZI",
+  authDomain: rawConfig.authDomain || "clinical-mang.firebaseapp.com",
+  firestoreDatabaseId: rawConfig.firestoreDatabaseId || "(default)",
+  storageBucket: rawConfig.storageBucket || "clinical-mang.firebasestorage.app",
+  messagingSenderId: rawConfig.messagingSenderId || "617272364959",
+  measurementId: rawConfig.measurementId || "G-R84XYVDZMK"
 };
 
 // Initialize Firebase App safely
@@ -33,7 +34,7 @@ export const auth = getAuth(app);
 let firestoreInstance;
 try {
   const databaseId = firebaseConfig.firestoreDatabaseId;
-  firestoreInstance = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
+  firestoreInstance = (databaseId && databaseId !== '(default)') ? getFirestore(app, databaseId) : getFirestore(app);
 } catch (e) {
   console.warn('Firestore fallback init:', e);
   firestoreInstance = getFirestore(app);

@@ -1,12 +1,10 @@
 {
-  "projectId": "gen-lang-client-0785272696",
-  "appId": "1:43970059143:web:2ee5632b527f5f74fe9122",
-  "apiKey": "AIzaSyA9h-DQkd60vi1ROvocQzfOaUHP4XGxIdA",
-  "authDomain": "gen-lang-client-0785272696.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-clinicproegyptde-9cbae89b-76e3-4580-b646-f3116460b2bd",
-  "storageBucket": "gen-lang-client-0785272696.firebasestorage.app",
-  "messagingSenderId": "43970059143",
-  "measurementId": "",
-  "oAuthClientId": "43970059143-qb9qrt921ol56fpbnf680ko047n90nf1.apps.googleusercontent.com",
-  "recaptchaSiteKey": ""
+  "projectId": "clinical-mang",
+  "appId": "1:617272364959:web:432a393e7f295c7051f7aa",
+  "apiKey": "AIzaSyBs8hFhSfVhJ1dyNOATBb9JlNw6cBSSsZI",
+  "authDomain": "clinical-mang.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "clinical-mang.firebasestorage.app",
+  "messagingSenderId": "617272364959",
+  "measurementId": "G-R84XYVDZMK"
 }

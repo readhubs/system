@@ -88,6 +88,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
         // Cache local profile in localStorage for instant offline access
         localStorage.setItem(`clinicpro_user_${uid}`, JSON.stringify(doctorProfile));
+        localStorage.setItem('clinicpro_active_session', JSON.stringify(doctorProfile));
         onAuthenticated(doctorProfile);
       } else {
         // Sign In
@@ -117,6 +118,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
         if (profileData) {
           localStorage.setItem(`clinicpro_user_${uid}`, JSON.stringify(profileData));
+          localStorage.setItem('clinicpro_active_session', JSON.stringify(profileData));
           onAuthenticated(profileData);
         } else {
           // Construct fallback doctor profile if doc is not retrieved
@@ -141,6 +143,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
             }
           };
           localStorage.setItem(`clinicpro_user_${uid}`, JSON.stringify(fallbackProfile));
+          localStorage.setItem('clinicpro_active_session', JSON.stringify(fallbackProfile));
           onAuthenticated(fallbackProfile);
         }
       }
@@ -185,6 +188,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
       }
     };
     localStorage.setItem('clinicpro_user_offline_doctor_demo', JSON.stringify(demoDoctor));
+    localStorage.setItem('clinicpro_active_session', JSON.stringify(demoDoctor));
     onAuthenticated(demoDoctor);
   };
 

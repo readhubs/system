@@ -94,8 +94,22 @@ export default function App() {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [deferredPwaPrompt, setDeferredPwaPrompt] = useState<any>(null);
 
-  // 1. Firebase Auth Listener
+  // 1. Firebase Auth Listener & Cached Session Loader
   useEffect(() => {
+    // Check if there is an active cached session already in localStorage
+    const savedActiveUser = localStorage.getItem('clinicpro_active_session');
+    if (savedActiveUser) {
+      try {
+        const parsed = JSON.parse(savedActiveUser);
+        if (parsed && parsed.uid) {
+          setCurrentUser(parsed);
+          setAuthChecking(false);
+        }
+      } catch (e) {
+        // ignore parse error
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
       if (fbUser) {
@@ -145,14 +159,26 @@ export default function App() {
         }
 
         localStorage.setItem(`clinicpro_user_${fbUser.uid}`, JSON.stringify(profile));
+        localStorage.setItem('clinicpro_active_session', JSON.stringify(profile));
         setCurrentUser(profile);
       } else {
-        setCurrentUser(null);
+        const currentSession = localStorage.getItem('clinicpro_active_session');
+        if (!currentSession) {
+          setCurrentUser(null);
+        }
       }
       setAuthChecking(false);
     });
 
-    return () => unsubscribe();
+    // Safety timeout: Never leave the user stuck on loading spinner for more than 2 seconds
+    const safetyTimer = setTimeout(() => {
+      setAuthChecking(false);
+    }, 2000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(safetyTimer);
+    };
   }, []);
 
   // 2. Real-time Firestore Subscriptions bound to Clinic ID
@@ -254,7 +280,12 @@ export default function App() {
   };
 
   const handleSignOut = async () => {
-    await firebaseSignOut(auth);
+    localStorage.removeItem('clinicpro_active_session');
+    try {
+      await firebaseSignOut(auth);
+    } catch (e) {
+      console.warn('Signout note:', e);
+    }
     setCurrentUser(null);
     setFirebaseUser(null);
   };
@@ -362,9 +393,16 @@ export default function App() {
     );
   }
 
-  // CRITICAL FIX: If unauthenticated, user CANNOT bypass this screen.
-  if (!firebaseUser || !currentUser) {
-    return <AuthScreen onAuthenticated={(profile) => setCurrentUser(profile)} />;
+  // Auth Gate: Require authenticated user profile
+  if (!currentUser) {
+    return (
+      <AuthScreen
+        onAuthenticated={(profile) => {
+          localStorage.setItem('clinicpro_active_session', JSON.stringify(profile));
+          setCurrentUser(profile);
+        }}
+      />
+    );
   }
 
   // Active Patient computed object

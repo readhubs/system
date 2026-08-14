@@ -11,6 +11,7 @@ import {
   Doctor,
   UserProfile,
   ClinicSettings,
+  Clinic,
   PermissionsMap
 } from './types';
 import {
@@ -21,8 +22,7 @@ import {
   INITIAL_PATIENT_IMAGES,
   INITIAL_DOCTORS,
   INITIAL_STAFF,
-  INITIAL_CLINIC_SETTINGS,
-  DEFAULT_DOCTOR_PROFILE
+  INITIAL_CLINIC_SETTINGS
 } from './lib/mockData';
 
 import {
@@ -40,6 +40,8 @@ import {
   saveClinicSettingsToFirestore,
   subscribeStaffList,
   saveStaffUserToFirestore,
+  deleteStaffUserFromFirestore,
+  subscribeClinicDoc,
   seedInitialClinicDataIfEmpty
 } from './lib/firestoreService';
 
@@ -56,18 +58,24 @@ import { Dashboard } from './components/Dashboard';
 import { PatientsPage } from './components/PatientsPage';
 import { PatientProfile } from './components/PatientProfile';
 import { AppointmentsPage } from './components/AppointmentsPage';
+import { FollowUpsPage } from './components/FollowUpsPage';
 import { SmartScheduler } from './components/SmartScheduler';
 import { FinancialReportsPage } from './components/FinancialReportsPage';
-import { StaffManagementPage } from './components/StaffManagementPage';
 import { SettingsPage } from './components/SettingsPage';
 import { PatientForm } from './components/PatientForm';
 import { PublicBookingModal } from './components/PublicBookingModal';
+import { SuperAdminPortal } from './components/SuperAdminPortal';
+import { SuspendedClinicScreen } from './components/SuspendedClinicScreen';
+import { AssistantDashboard } from './components/AssistantDashboard';
 
 export default function App() {
   // Authentication State
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [authChecking, setAuthChecking] = useState<boolean>(true);
+
+  // Clinic SaaS Document State
+  const [clinicDoc, setClinicDoc] = useState<Clinic | null>(null);
 
   // Application Data State
   const [patients, setPatients] = useState<Patient[]>(INITIAL_PATIENTS);
@@ -81,7 +89,8 @@ export default function App() {
 
   const [lang, setLang] = useState<'en' | 'ar'>('en');
 
-  // Navigation State
+  // Navigation State & GitHub Pages Hash Routing
+  const [currentHash, setCurrentHash] = useState<string>(window.location.hash || '');
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
@@ -94,7 +103,18 @@ export default function App() {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [deferredPwaPrompt, setDeferredPwaPrompt] = useState<any>(null);
 
-  // 1. Firebase Auth Listener & Cached Session Loader
+  // 1. Listen to Hash changes for GitHub Pages client-side routing
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash || '';
+      setCurrentHash(hash);
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // 2. Firebase Auth Listener & Cached Session Loader
   useEffect(() => {
     // Check if there is an active cached session already in localStorage
     const savedActiveUser = localStorage.getItem('clinicpro_active_session');
@@ -120,7 +140,7 @@ export default function App() {
             profile = userDocSnap.data() as UserProfile;
           }
         } catch (e) {
-          console.warn('Could not read user profile from cloud Firestore directly:', e);
+          console.warn('Firestore user fetch note:', e);
         }
 
         if (!profile) {
@@ -135,13 +155,13 @@ export default function App() {
         }
 
         if (!profile) {
-          // Fallback for newly created doctor account
+          const isSuperAdminEmail = fbUser.email === 'replitoo55@gmail.com';
           profile = {
             uid: fbUser.uid,
             name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Doctor',
             email: fbUser.email || '',
-            role: 'doctor',
-            clinicId: `clinic_${fbUser.uid.slice(0, 8)}`,
+            role: isSuperAdminEmail ? 'super_admin' : 'doctor',
+            clinicId: isSuperAdminEmail ? 'system' : `clinic_${fbUser.uid.slice(0, 8)}`,
             permissions: {
               viewPatients: true,
               editClinical: true,
@@ -170,10 +190,9 @@ export default function App() {
       setAuthChecking(false);
     });
 
-    // Safety timeout: Never leave the user stuck on loading spinner for more than 2 seconds
     const safetyTimer = setTimeout(() => {
       setAuthChecking(false);
-    }, 2000);
+    }, 1500);
 
     return () => {
       unsubscribe();
@@ -181,22 +200,26 @@ export default function App() {
     };
   }, []);
 
-  // 2. Real-time Firestore Subscriptions bound to Clinic ID
+  // 3. Real-time Firestore Subscriptions bound to Clinic ID
   useEffect(() => {
     if (!currentUser?.clinicId) return;
 
     const cid = currentUser.clinicId;
 
     // Seed initial demo data for new clinics if empty
-    seedInitialClinicDataIfEmpty(cid, INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_DOCTORS, INITIAL_STAFF, INITIAL_CLINIC_SETTINGS);
+    if (cid !== 'system') {
+      seedInitialClinicDataIfEmpty(cid, INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_DOCTORS, INITIAL_STAFF, INITIAL_CLINIC_SETTINGS);
+    }
 
     // Subscriptions
+    const unsubClinic = subscribeClinicDoc(cid, (data) => setClinicDoc(data));
     const unsubPatients = subscribePatients(cid, (data) => setPatients(data));
     const unsubAppointments = subscribeAppointments(cid, (data) => setAppointments(data));
     const unsubSettings = subscribeClinicSettings(cid, (data) => setClinicSettings(data));
     const unsubStaff = subscribeStaffList(cid, (data) => setStaffList(data));
 
     return () => {
+      unsubClinic();
       unsubPatients();
       unsubAppointments();
       unsubSettings();
@@ -236,14 +259,14 @@ export default function App() {
     };
   }, [selectedPatientId, currentUser?.clinicId]);
 
-  // 3. Notification timers & listeners
+  // 4. Notification timers
   useEffect(() => {
     requestNotificationPermission();
 
     const interval = setInterval(() => {
       checkUpcomingAppointmentsAndNotify(appointments);
       checkDaily7AMSummaryAndNotify(appointments);
-    }, 60000); // check every minute
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [appointments]);
@@ -288,6 +311,7 @@ export default function App() {
     }
     setCurrentUser(null);
     setFirebaseUser(null);
+    window.location.hash = '';
   };
 
   // Action Handlers
@@ -364,18 +388,50 @@ export default function App() {
     }
   };
 
-  const handleUpdateStaffPermissions = async (uid: string, permissions: PermissionsMap) => {
-    const updatedStaff = staffList.map((s) => (s.uid === uid ? { ...s, permissions } : s));
-    setStaffList(updatedStaff);
-    const target = updatedStaff.find((s) => s.uid === uid);
-    if (target) {
-      await saveStaffUserToFirestore(target);
-    }
+  const handleAddAssistant = async (name: string, phone: string, pass: string) => {
+    if (!currentUser?.clinicId) return;
+    const cid = currentUser.clinicId;
+    const cleanPhone = phone.replace(/\s+/g, '');
+    const newAssistant: UserProfile = {
+      uid: `user_${Date.now()}`,
+      name,
+      phone: cleanPhone,
+      email: `${cleanPhone}@clinicpro.local`,
+      role: 'assistant',
+      clinicId: cid,
+      initialPassword: pass,
+      disabled: false,
+      permissions: {
+        viewPatients: true,
+        editClinical: false,
+        editToothChart: false,
+        uploadViewImages: false,
+        manageAppointments: true,
+        viewFinancials: false,
+        viewPaymentAmounts: false,
+        recordPayments: true,
+        manageStaff: false,
+        accessSettings: false,
+        sendWhatsApp: true
+      }
+    };
+
+    setStaffList([...staffList, newAssistant]);
+    await saveStaffUserToFirestore(newAssistant);
   };
 
-  const handleAddStaffMember = async (newStaff: UserProfile) => {
-    setStaffList([...staffList, newStaff]);
-    await saveStaffUserToFirestore(newStaff);
+  const handleToggleAssistantStatus = async (ast: UserProfile) => {
+    const updated: UserProfile = {
+      ...ast,
+      disabled: !ast.disabled
+    };
+    setStaffList(staffList.map((s) => (s.uid === ast.uid ? updated : s)));
+    await saveStaffUserToFirestore(updated);
+  };
+
+  const handleDeleteAssistant = async (assistantId: string) => {
+    setStaffList(staffList.filter((s) => s.uid !== assistantId));
+    await deleteStaffUserFromFirestore(assistantId);
   };
 
   const handleUpdateSettings = async (newSet: ClinicSettings) => {
@@ -405,13 +461,87 @@ export default function App() {
     );
   }
 
-  // Active Patient computed object
+  // 1. Super Admin Hidden Portal Route
+  const isSuperAdminUser =
+    currentUser.role === 'super_admin' || currentUser.email === 'replitoo55@gmail.com';
+
+  if (currentHash === '#/system-admin-portal' || window.location.pathname === '/system-admin-portal') {
+    if (isSuperAdminUser) {
+      return (
+        <SuperAdminPortal
+          onExit={() => {
+            window.location.hash = '';
+            setCurrentHash('');
+          }}
+        />
+      );
+    }
+  }
+
+  // 2. Suspended Clinic Check
+  if (clinicDoc?.status === 'suspended' && !isSuperAdminUser) {
+    return <SuspendedClinicScreen clinicName={clinicDoc.name || clinicSettings.name} onLogout={handleSignOut} />;
+  }
+
+  // 3. Assistant Role Interface (Foolproof 3-Action UI)
+  if (currentUser.role === 'assistant') {
+    return (
+      <div
+        className={`min-h-screen bg-slate-950 text-white font-sans antialiased flex flex-col ${
+          lang === 'ar' ? 'rtl' : 'ltr'
+        }`}
+        dir={lang === 'ar' ? 'rtl' : 'ltr'}
+      >
+        <Navbar
+          clinicSettings={clinicSettings}
+          userProfile={currentUser}
+          lang={lang}
+          onLanguageToggle={() => setLang(lang === 'en' ? 'ar' : 'en')}
+          isOnline={isOnline}
+          canInstallPWA={Boolean(deferredPwaPrompt)}
+          onInstallPWA={handleInstallPWA}
+          onSignOut={handleSignOut}
+        />
+
+        <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
+          <AssistantDashboard
+            currentUser={currentUser}
+            clinicSettings={clinicSettings}
+            patients={patients}
+            appointments={appointments}
+            onLogout={handleSignOut}
+          />
+        </main>
+
+        {showAddPatientModal && (
+          <PatientForm
+            initialData={editingPatient}
+            clinicId={currentUser.clinicId}
+            onSubmit={(pData) => {
+              handleAddPatient(pData);
+            }}
+            onClose={() => {
+              setShowAddPatientModal(false);
+              setEditingPatient(undefined);
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // 4. Doctor / Admin Full Interface
   const activePatient = selectedPatientId
     ? patients.find((p) => p.id === selectedPatientId) || null
     : null;
 
   const todayStr = new Date().toISOString().split('T')[0];
+  const tomorrowObj = new Date();
+  tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+  const tomorrowStr = tomorrowObj.toISOString().split('T')[0];
+
   const todayAppointmentsCount = appointments.filter((a) => a.date === todayStr).length;
+  const tomorrowAppointmentsCount = appointments.filter((a) => a.date === tomorrowStr).length;
 
   const pendingFollowupsCount = patients.filter((p) => {
     const hasUntreated = Object.values(p.toothStatus || {}).some((s) => s === 'needs-treatment');
@@ -421,7 +551,7 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen bg-slate-100/70 text-slate-900 font-sans antialiased flex flex-col ${
+      className={`min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased flex flex-col ${
         lang === 'ar' ? 'rtl' : 'ltr'
       }`}
       dir={lang === 'ar' ? 'rtl' : 'ltr'}
@@ -449,6 +579,7 @@ export default function App() {
           permissions={currentUser.permissions}
           clinicSettings={clinicSettings}
           todayAppointmentsCount={todayAppointmentsCount}
+          tomorrowAppointmentsCount={tomorrowAppointmentsCount}
           pendingFollowupsCount={pendingFollowupsCount}
         />
 
@@ -490,7 +621,7 @@ export default function App() {
                 />
               )}
 
-              {/* TAB 2: PATIENTS */}
+              {/* TAB 2: PATIENTS & ODONTOGRAM */}
               {activeTab === 'patients' && (
                 <PatientsPage
                   patients={patients}
@@ -502,7 +633,7 @@ export default function App() {
                 />
               )}
 
-              {/* TAB 3: SCHEDULE & REMINDERS */}
+              {/* TAB 3: SCHEDULE & CALENDAR */}
               {activeTab === 'appointments' && (
                 <AppointmentsPage
                   appointments={appointments}
@@ -513,7 +644,17 @@ export default function App() {
                 />
               )}
 
-              {/* TAB 4: SMART FOLLOW-UP RADAR */}
+              {/* TAB 4: WHATSAPP FOLLOW-UPS & REMINDERS */}
+              {activeTab === 'followups' && (
+                <FollowUpsPage
+                  appointments={appointments}
+                  patients={patients}
+                  clinicSettings={clinicSettings}
+                  onSelectPatient={(pId) => setSelectedPatientId(pId)}
+                />
+              )}
+
+              {/* TAB 5: SMART RECALL RADAR */}
               {activeTab === 'smart-scheduler' && (
                 <SmartScheduler
                   patients={patients}
@@ -522,7 +663,7 @@ export default function App() {
                 />
               )}
 
-              {/* TAB 5: FINANCIAL REPORTS */}
+              {/* TAB 6: FINANCIAL REPORTS */}
               {activeTab === 'financials' && (
                 <FinancialReportsPage
                   payments={payments}
@@ -532,21 +673,18 @@ export default function App() {
                 />
               )}
 
-              {/* TAB 6: STAFF PERMISSIONS */}
-              {activeTab === 'staff' && (
-                <StaffManagementPage
-                  staffList={staffList}
-                  onUpdateStaffPermissions={handleUpdateStaffPermissions}
-                  onAddStaffMember={handleAddStaffMember}
-                  currentUserRole={currentUser.role}
-                />
-              )}
-
-              {/* TAB 7: SETTINGS */}
+              {/* TAB 7: CLINIC SETTINGS & ASSISTANT STAFF */}
               {activeTab === 'settings' && (
                 <SettingsPage
                   settings={clinicSettings}
                   onUpdateSettings={handleUpdateSettings}
+                  currentUser={currentUser}
+                  patients={patients}
+                  appointments={appointments}
+                  staffList={staffList}
+                  onAddAssistant={handleAddAssistant}
+                  onToggleAssistantStatus={handleToggleAssistantStatus}
+                  onDeleteAssistant={handleDeleteAssistant}
                   lang={lang}
                   onLanguageChange={(newLang) => setLang(newLang)}
                 />
@@ -560,6 +698,7 @@ export default function App() {
       {showAddPatientModal && (
         <PatientForm
           initialData={editingPatient}
+          clinicId={currentUser.clinicId}
           onSubmit={(pData) => {
             if (editingPatient) {
               handleUpdatePatient({
@@ -579,7 +718,7 @@ export default function App() {
         />
       )}
 
-      {/* Public Online Booking Modal (Toggleable in Settings) */}
+      {/* Public Online Booking Modal */}
       {showPublicBookingModal && (
         <PublicBookingModal
           settings={clinicSettings}

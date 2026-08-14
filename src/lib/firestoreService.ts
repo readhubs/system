@@ -10,7 +10,11 @@ import {
   query,
   where,
   onSnapshot,
-  orderBy
+  orderBy,
+  limit,
+  startAfter,
+  QueryDocumentSnapshot,
+  DocumentData
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from './firebase';
 import {
@@ -21,26 +25,112 @@ import {
   PatientImage,
   Doctor,
   UserProfile,
-  ClinicSettings
+  ClinicSettings,
+  Clinic,
+  ClinicStatus,
+  SubscriptionPlan
 } from '../types';
 
-// Helper to seed initial sample data into Firestore if a clinic is brand new
-export async function seedInitialClinicDataIfEmpty(clinicId: string, initialPatients: Patient[], initialAppointments: Appointment[], initialDoctors: Doctor[], initialStaff: UserProfile[], initialSettings: ClinicSettings) {
+// ==========================================
+// 1. Super Admin: Clinic Management
+// ==========================================
+
+export function subscribeAllClinics(onUpdate: (clinics: Clinic[]) => void) {
+  const q = query(collection(db, 'clinics'), orderBy('createdAt', 'desc'));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: Clinic[] = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      })) as Clinic[];
+      onUpdate(list);
+    },
+    (err) => handleFirestoreError(err, OperationType.LIST, 'clinics')
+  );
+}
+
+export async function saveClinicToFirestore(clinic: Clinic) {
   try {
-    const patientsQuery = query(collection(db, 'patients'), where('clinicId', '==', clinicId));
+    await setDoc(doc(db, 'clinics', clinic.id), clinic, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `clinics/${clinic.id}`);
+  }
+}
+
+export async function updateClinicStatusInFirestore(clinicId: string, status: ClinicStatus) {
+  try {
+    await updateDoc(doc(db, 'clinics', clinicId), { status });
+    // Also update settings doc if exists
+    await setDoc(doc(db, 'settings', clinicId), { status }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, `clinics/${clinicId}`);
+  }
+}
+
+export async function updateClinicPlanInFirestore(
+  clinicId: string,
+  plan: SubscriptionPlan,
+  expiresAt?: string
+) {
+  try {
+    const updateData: any = { plan };
+    if (expiresAt) updateData.subscriptionExpiresAt = expiresAt;
+    await updateDoc(doc(db, 'clinics', clinicId), updateData);
+    await setDoc(doc(db, 'settings', clinicId), updateData, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, `clinics/${clinicId}`);
+  }
+}
+
+// ==========================================
+// 2. Initial Seeding for New Clinics
+// ==========================================
+
+export async function seedInitialClinicDataIfEmpty(
+  clinicId: string,
+  initialPatients: Patient[],
+  initialAppointments: Appointment[],
+  initialDoctors: Doctor[],
+  initialStaff: UserProfile[],
+  initialSettings: ClinicSettings
+) {
+  try {
+    const clinicDocRef = doc(db, 'clinics', clinicId);
+    const clinicSnap = await getDoc(clinicDocRef);
+
+    if (!clinicSnap.exists()) {
+      // Create primary clinic record
+      const newClinic: Clinic = {
+        id: clinicId,
+        name: initialSettings.name || 'ClinicPro Dental Clinic',
+        doctorName: initialSettings.doctorName || 'Dr. Clinic Owner',
+        email: initialStaff[0]?.email || '',
+        phone: initialSettings.phone || '01000000000',
+        status: 'active',
+        plan: 'free_trial',
+        createdAt: new Date().toISOString(),
+        subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        whatsappTemplate: initialSettings.whatsappTemplate
+      };
+      await setDoc(clinicDocRef, newClinic);
+    }
+
+    const patientsQuery = query(collection(db, 'patients'), where('clinicId', '==', clinicId), limit(1));
     const snap = await getDocs(patientsQuery);
+
     if (snap.empty) {
-      console.log('Seeding initial clinical data into Firestore for clinic:', clinicId);
+      console.log('Seeding initial clinical data for clinic:', clinicId);
 
       // Seed settings
-      await setDoc(doc(db, 'settings', clinicId), { ...initialSettings, clinicId });
+      await setDoc(doc(db, 'settings', clinicId), { ...initialSettings, clinicId, status: 'active', plan: 'free_trial' }, { merge: true });
 
       // Seed Doctors
       for (const docItem of initialDoctors) {
         await setDoc(doc(db, 'doctors', docItem.id), { ...docItem, clinicId });
       }
 
-      // Seed Patients and Subcollections
+      // Seed Patients and consolidated records
       for (const p of initialPatients) {
         const patientData = { ...p, clinicId };
         await setDoc(doc(db, 'patients', p.id), patientData);
@@ -64,23 +154,6 @@ export async function seedInitialClinicDataIfEmpty(clinicId: string, initialPati
           await setDoc(doc(db, 'patients', p.id, 'toothRecords', tr.id), { ...tr, clinicId });
         }
 
-        // Subcollection images
-        const defaultImgs: PatientImage[] = [
-          {
-            id: `img_${p.id}_1`,
-            patientId: p.id,
-            toothNumber: 16,
-            type: 'Periapical',
-            url: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&w=800&q=80',
-            fileName: 'tooth_16_endo.jpg',
-            date: '2026-07-15',
-            uploadedBy: 'Dr. Sarah Khalil'
-          }
-        ];
-        for (const img of defaultImgs) {
-          await setDoc(doc(db, 'patients', p.id, 'images', img.id), { ...img, clinicId });
-        }
-
         // Subcollection payments
         const defaultPays: Payment[] = [
           {
@@ -90,7 +163,8 @@ export async function seedInitialClinicDataIfEmpty(clinicId: string, initialPati
             amount: 1000,
             date: new Date().toISOString(),
             method: 'Cash',
-            remainingBalanceSnapshot: p.balance
+            remainingBalanceSnapshot: p.balance,
+            clinicId
           }
         ];
         for (const pay of defaultPays) {
@@ -108,9 +182,21 @@ export async function seedInitialClinicDataIfEmpty(clinicId: string, initialPati
   }
 }
 
-// Subscribe to Patients
-export function subscribePatients(clinicId: string, onUpdate: (patients: Patient[]) => void) {
-  const q = query(collection(db, 'patients'), where('clinicId', '==', clinicId));
+// ==========================================
+// 3. Patients (Multi-Tenant & Paginated Reads)
+// ==========================================
+
+export function subscribePatients(
+  clinicId: string,
+  onUpdate: (patients: Patient[]) => void,
+  pageSize: number = 100
+) {
+  const q = query(
+    collection(db, 'patients'),
+    where('clinicId', '==', clinicId),
+    limit(pageSize)
+  );
+
   return onSnapshot(
     q,
     (snapshot) => {
@@ -124,16 +210,26 @@ export function subscribePatients(clinicId: string, onUpdate: (patients: Patient
   );
 }
 
-// Save Patient
 export async function savePatientToFirestore(patient: Patient) {
   try {
-    await setDoc(doc(db, 'patients', patient.id), patient);
+    await setDoc(doc(db, 'patients', patient.id), patient, { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `patients/${patient.id}`);
   }
 }
 
-// Subscribe to Appointments
+export async function deletePatientFromFirestore(patientId: string) {
+  try {
+    await deleteDoc(doc(db, 'patients', patientId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `patients/${patientId}`);
+  }
+}
+
+// ==========================================
+// 4. Appointments & WhatsApp Follow-ups
+// ==========================================
+
 export function subscribeAppointments(clinicId: string, onUpdate: (appointments: Appointment[]) => void) {
   const q = query(collection(db, 'appointments'), where('clinicId', '==', clinicId));
   return onSnapshot(
@@ -149,16 +245,37 @@ export function subscribeAppointments(clinicId: string, onUpdate: (appointments:
   );
 }
 
-// Save Appointment
 export async function saveAppointmentToFirestore(appointment: Appointment) {
   try {
-    await setDoc(doc(db, 'appointments', appointment.id), appointment);
+    await setDoc(doc(db, 'appointments', appointment.id), appointment, { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `appointments/${appointment.id}`);
   }
 }
 
-// Subcollection: Tooth Records
+export async function deleteAppointmentFromFirestore(appointmentId: string) {
+  try {
+    await deleteDoc(doc(db, 'appointments', appointmentId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `appointments/${appointmentId}`);
+  }
+}
+
+export async function markAppointmentReminderSent(appointmentId: string) {
+  try {
+    await updateDoc(doc(db, 'appointments', appointmentId), {
+      reminderSent: true,
+      reminderSentAt: new Date().toISOString()
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, `appointments/${appointmentId}`);
+  }
+}
+
+// ==========================================
+// 5. Tooth Records & Clinical History
+// ==========================================
+
 export function subscribeToothRecords(patientId: string, onUpdate: (records: ToothRecord[]) => void) {
   const colRef = collection(db, 'patients', patientId, 'toothRecords');
   return onSnapshot(
@@ -179,13 +296,16 @@ export async function saveToothRecordToFirestore(patientId: string, record: Toot
     await setDoc(doc(db, 'patients', patientId, 'toothRecords', record.id), {
       ...record,
       clinicId
-    });
+    }, { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `patients/${patientId}/toothRecords/${record.id}`);
   }
 }
 
-// Subcollection: Patient Images
+// ==========================================
+// 6. Patient Images & Radiographs
+// ==========================================
+
 export function subscribePatientImages(patientId: string, onUpdate: (images: PatientImage[]) => void) {
   const colRef = collection(db, 'patients', patientId, 'images');
   return onSnapshot(
@@ -206,13 +326,16 @@ export async function savePatientImageToFirestore(patientId: string, image: Pati
     await setDoc(doc(db, 'patients', patientId, 'images', image.id), {
       ...image,
       clinicId
-    });
+    }, { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `patients/${patientId}/images/${image.id}`);
   }
 }
 
-// Subcollection: Payments
+// ==========================================
+// 7. Patient Payments & Collections
+// ==========================================
+
 export function subscribePatientPayments(patientId: string, onUpdate: (payments: Payment[]) => void) {
   const colRef = collection(db, 'patients', patientId, 'payments');
   return onSnapshot(
@@ -233,13 +356,16 @@ export async function savePaymentToFirestore(patientId: string, payment: Payment
     await setDoc(doc(db, 'patients', patientId, 'payments', payment.id), {
       ...payment,
       clinicId
-    });
+    }, { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `patients/${patientId}/payments/${payment.id}`);
   }
 }
 
-// Clinic Settings
+// ==========================================
+// 8. Clinic Settings
+// ==========================================
+
 export function subscribeClinicSettings(clinicId: string, onUpdate: (settings: ClinicSettings) => void) {
   return onSnapshot(
     doc(db, 'settings', clinicId),
@@ -254,13 +380,23 @@ export function subscribeClinicSettings(clinicId: string, onUpdate: (settings: C
 
 export async function saveClinicSettingsToFirestore(settings: ClinicSettings) {
   try {
-    await setDoc(doc(db, 'settings', settings.clinicId), settings);
+    await setDoc(doc(db, 'settings', settings.clinicId), settings, { merge: true });
+    // Also update clinic master
+    await setDoc(doc(db, 'clinics', settings.clinicId), {
+      name: settings.name,
+      doctorName: settings.doctorName,
+      phone: settings.phone,
+      whatsappTemplate: settings.whatsappTemplate
+    }, { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `settings/${settings.clinicId}`);
   }
 }
 
-// Staff Users
+// ==========================================
+// 9. Staff & Assistant Management
+// ==========================================
+
 export function subscribeStaffList(clinicId: string, onUpdate: (staff: UserProfile[]) => void) {
   const q = query(collection(db, 'users'), where('clinicId', '==', clinicId));
   return onSnapshot(
@@ -278,8 +414,67 @@ export function subscribeStaffList(clinicId: string, onUpdate: (staff: UserProfi
 
 export async function saveStaffUserToFirestore(user: UserProfile) {
   try {
-    await setDoc(doc(db, 'users', user.uid), user);
+    await setDoc(doc(db, 'users', user.uid), user, { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
   }
+}
+
+export async function deleteStaffUserFromFirestore(userId: string) {
+  try {
+    await deleteDoc(doc(db, 'users', userId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `users/${userId}`);
+  }
+}
+
+export function subscribeClinicDoc(clinicId: string, onUpdate: (clinic: Clinic | null) => void) {
+  const docRef = doc(db, 'clinics', clinicId);
+  return onSnapshot(
+    docRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        onUpdate({ id: snapshot.id, ...snapshot.data() } as Clinic);
+      } else {
+        onUpdate(null);
+      }
+    },
+    (err) => handleFirestoreError(err, OperationType.GET, `clinics/${clinicId}`)
+  );
+}
+
+// ==========================================
+// 10. Data Export Helpers (CSV)
+// ==========================================
+
+export function exportToCSV(filename: string, rows: Record<string, any>[]) {
+  if (!rows || !rows.length) return;
+  const separator = ',';
+  const keys = Object.keys(rows[0]);
+  const csvContent =
+    keys.join(separator) +
+    '\n' +
+    rows
+      .map((row) => {
+        return keys
+          .map((k) => {
+            let cell = row[k] === null || row[k] === undefined ? '' : row[k];
+            cell = typeof cell === 'object' ? JSON.stringify(cell).replace(/"/g, '""') : String(cell).replace(/"/g, '""');
+            if (cell.search(/("|,|\n)/g) >= 0) {
+              cell = `"${cell}"`;
+            }
+            return cell;
+          })
+          .join(separator);
+      })
+      .join('\n');
+
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }

@@ -27,7 +27,11 @@ export const PatientsPage: React.FC<PatientsPageProps> = ({
     if (!matchesQuery) return false;
 
     if (filterType === 'balance') return p.balance > 0;
-    if (filterType === 'alerts') return Boolean(p.medicalAlerts && p.medicalAlerts.trim().length > 0);
+    if (filterType === 'alerts') {
+      return Array.isArray(p.medicalAlerts)
+        ? p.medicalAlerts.length > 0
+        : Boolean(p.medicalAlerts && String(p.medicalAlerts).trim().length > 0);
+    }
     if (filterType === 'unscheduled') {
       const hasUntreated = Object.values(p.toothStatus || {}).some((s) => s === 'needs-treatment');
       return hasUntreated;
@@ -100,7 +104,9 @@ export const PatientsPage: React.FC<PatientsPageProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredPatients.length > 0 ? (
           filteredPatients.map((patient) => {
-            const hasAlerts = Boolean(patient.medicalAlerts && patient.medicalAlerts.trim().length > 0);
+            const hasAlerts = Array.isArray(patient.medicalAlerts)
+              ? patient.medicalAlerts.length > 0
+              : Boolean(patient.medicalAlerts && String(patient.medicalAlerts).trim().length > 0);
             const treatedCount = Object.values(patient.toothStatus || {}).filter((s) => s === 'treated').length;
             const needsCount = Object.values(patient.toothStatus || {}).filter((s) => s === 'needs-treatment').length;
 
@@ -134,7 +140,11 @@ export const PatientsPage: React.FC<PatientsPageProps> = ({
                   {hasAlerts && (
                     <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-[11px] text-rose-900 font-bold flex items-start gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
-                      <span className="line-clamp-1">{patient.medicalAlerts}</span>
+                      <span className="line-clamp-1">
+                        {Array.isArray(patient.medicalAlerts)
+                          ? patient.medicalAlerts.join(', ')
+                          : String(patient.medicalAlerts)}
+                      </span>
                     </div>
                   )}
 

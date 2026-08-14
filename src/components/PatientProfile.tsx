@@ -98,6 +98,71 @@ export const PatientProfile: React.FC<PatientProfileProps> = ({
     setShowUploadImage(false);
   };
 
+  const handleQuickAction = (
+    toothNum: number,
+    action: 'fill' | 'extract' | 'endo' | 'clean' | 'crown' | 'healthy'
+  ) => {
+    let statusToSet: ToothStatus = 'healthy';
+    let procName = '';
+    let estimatedCost = 500;
+
+    switch (action) {
+      case 'fill':
+        statusToSet = 'treated';
+        procName = `Composite Filling on Tooth #${toothNum}`;
+        estimatedCost = 600;
+        break;
+      case 'endo':
+        statusToSet = 'endo';
+        procName = `Root Canal Treatment (RCT) on Tooth #${toothNum}`;
+        estimatedCost = 1500;
+        break;
+      case 'crown':
+        statusToSet = 'crown';
+        procName = `Porcelain / Zirconia Crown on Tooth #${toothNum}`;
+        estimatedCost = 2500;
+        break;
+      case 'extract':
+        statusToSet = 'extracted';
+        procName = `Surgical / Simple Extraction of Tooth #${toothNum}`;
+        estimatedCost = 400;
+        break;
+      case 'clean':
+        statusToSet = 'healthy';
+        procName = `Ultrasonic Scaling & Polishing`;
+        estimatedCost = 500;
+        break;
+      case 'healthy':
+        statusToSet = 'healthy';
+        break;
+    }
+
+    const updatedStatusMap = {
+      ...patient.toothStatus,
+      [toothNum]: statusToSet
+    };
+
+    onUpdatePatient({
+      ...patient,
+      toothStatus: updatedStatusMap,
+      balance: action !== 'healthy' ? patient.balance + estimatedCost : patient.balance
+    });
+
+    if (action !== 'healthy') {
+      onAddToothRecord({
+        patientId: patient.id,
+        toothNumber: toothNum,
+        procedureName: procName,
+        surface: 'O',
+        doctorName: clinicSettings.doctorName || 'Chief Doctor',
+        status: 'completed',
+        cost: estimatedCost,
+        date: new Date().toISOString().split('T')[0],
+        notes: `Quick recorded via Interactive Odontogram (${action.toUpperCase()})`
+      });
+    }
+  };
+
   const handleAddPaymentSubmit = (payData: Omit<Payment, 'id'>) => {
     onAddPayment(payData);
 
@@ -162,6 +227,7 @@ export const PatientProfile: React.FC<PatientProfileProps> = ({
             <DentalChart
               toothStatus={patient.toothStatus || {}}
               onToothSelect={(num) => setSelectedToothNumber(num)}
+              onQuickAction={handleQuickAction}
               selectedToothNumber={selectedToothNumber}
             />
 

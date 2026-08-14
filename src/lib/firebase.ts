@@ -30,14 +30,23 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
 
-// Initialize Firestore safely
+// Initialize Firestore with IndexedDB multi-tab offline persistence safely
 let firestoreInstance;
 try {
-  const databaseId = firebaseConfig.firestoreDatabaseId;
-  firestoreInstance = (databaseId && databaseId !== '(default)') ? getFirestore(app, databaseId) : getFirestore(app);
+  firestoreInstance = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
 } catch (e) {
-  console.warn('Firestore fallback init:', e);
-  firestoreInstance = getFirestore(app);
+  // If already initialized or unsupported, fallback to getFirestore
+  try {
+    const databaseId = firebaseConfig.firestoreDatabaseId;
+    firestoreInstance = (databaseId && databaseId !== '(default)') ? getFirestore(app, databaseId) : getFirestore(app);
+  } catch (err) {
+    console.warn('Firestore fallback init:', err);
+    firestoreInstance = getFirestore(app);
+  }
 }
 export const db = firestoreInstance;
 

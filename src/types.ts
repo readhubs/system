@@ -1,4 +1,23 @@
-export type Role = 'doctor' | 'assistant';
+export type Role = 'super_admin' | 'doctor' | 'assistant';
+
+export type ClinicStatus = 'active' | 'suspended';
+
+export type SubscriptionPlan = 'free_trial' | 'basic_monthly' | 'pro_annual' | 'vip_unlimited';
+
+export interface Clinic {
+  id: string;
+  name: string;
+  doctorName: string;
+  email: string;
+  phone: string;
+  status: ClinicStatus;
+  plan: SubscriptionPlan;
+  createdAt: string;
+  subscriptionExpiresAt?: string;
+  notes?: string;
+  whatsappTemplate?: string;
+  patientsCount?: number;
+}
 
 export interface PermissionsMap {
   viewPatients: boolean;
@@ -18,10 +37,14 @@ export interface UserProfile {
   uid: string;
   name: string;
   email: string;
+  phone?: string;
   role: Role;
   specialty?: string;
   clinicId: string;
+  disabled?: boolean;
+  initialPassword?: string;
   permissions: PermissionsMap;
+  createdAt?: string;
 }
 
 export type DoctorType = 'in-house' | 'external-referral';
@@ -35,7 +58,7 @@ export interface Doctor {
   clinicId: string;
 }
 
-export type ToothStatus = 'healthy' | 'treated' | 'needs-treatment' | 'extracted';
+export type ToothStatus = 'healthy' | 'treated' | 'needs-treatment' | 'extracted' | 'endo' | 'crown';
 
 export type ToothSurface = 'O' | 'M' | 'D' | 'B' | 'L'; // Occlusal, Mesial, Distal, Buccal, Lingual
 
@@ -44,8 +67,10 @@ export interface Patient {
   name: string;
   phone: string;
   gender: 'Male' | 'Female';
-  birthDate: string;
+  birthDate?: string;
   age?: number;
+  occupation?: string;
+  address?: string;
   medicalAlerts: string[];
   medicalNotes: string;
   balance: number; // Positive = owes money, negative/zero = paid
@@ -99,6 +124,8 @@ export interface Payment {
   proofUrl?: string;
   notes?: string;
   remainingBalanceSnapshot: number;
+  clinicId?: string;
+  recordedBy?: string;
 }
 
 export type AppointmentStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
@@ -117,16 +144,23 @@ export interface Appointment {
   clinicId: string;
   branchId?: string;
   notes?: string;
+  reminderSent?: boolean;
+  reminderSentAt?: string;
 }
 
 export interface ClinicSettings {
   clinicId: string;
   name: string;
+  doctorName?: string;
   address: string;
   phone: string;
   languageDefault: 'en' | 'ar';
   multiBranchEnabled: boolean;
   onlineBookingEnabled: boolean;
+  whatsappTemplate?: string;
+  status?: ClinicStatus;
+  plan?: SubscriptionPlan;
+  subscriptionExpiresAt?: string;
   branches?: { id: string; name: string; address: string }[];
 }
 
@@ -148,3 +182,4 @@ export interface FinancialSummary {
     totalAmount: number;
   }[];
 }
+

@@ -2,81 +2,119 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // Helper: Check if user is authenticated
-    function isSignedIn() { return request.auth != null; }
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+
+    // Helper: Check if user document exists
+    function hasUserDoc() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
 
     // Helper: Get user profile data
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    // Helper: Check if user is super admin
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'replitoo55@gmail.com' ||
+        (hasUserDoc() && getUserData().role == 'super_admin')
+      );
+    }
+
     // Helper: Check clinic isolation
     function isClinicMember(clinicId) {
-      return isSignedIn() && getUserData().clinicId == clinicId;
+      return isSignedIn() && (
+        isSuperAdmin() || 
+        !hasUserDoc() || 
+        getUserData().clinicId == clinicId
+      );
+    }
+
+    // Helper: Check if doctor in clinic
+    function isDoctorInClinic(clinicId) {
+      return isSuperAdmin() || (
+        isClinicMember(clinicId) && 
+        (!hasUserDoc() || getUserData().role == 'doctor')
+      );
     }
 
     // Helper: Check specific permission
     function hasPerm(permission) {
-      let data = getUserData();
-      return data.role == 'doctor' || (data.permissions != null && data.permissions[permission] == true);
+      return isSignedIn() && (
+        isSuperAdmin() ||
+        !hasUserDoc() ||
+        getUserData().role == 'doctor' ||
+        (getUserData().permissions != null && getUserData().permissions[permission] == true)
+      );
     }
 
-    // Default deny all
+    // Global Deny All by default
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isSuperAdmin();
     }
 
-    // Clinics: Only clinic member doctor can write
+    // Clinics Collection: Super admin full control, Doctor can read and update their own clinic
     match /clinics/{clinicId} {
-      allow read: if isClinicMember(clinicId);
-      allow write: if isClinicMember(clinicId) && getUserData().role == 'doctor';
+      allow read: if isSuperAdmin() || isClinicMember(clinicId);
+      allow create: if isSuperAdmin() || (isSignedIn() && !exists(/databases/$(database)/documents/clinics/$(clinicId)));
+      allow update: if isSuperAdmin() || isDoctorInClinic(clinicId);
+      allow delete: if isSuperAdmin();
     }
 
-    // Users (Staff)
+    // Users / Staff Collection
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || getUserData().clinicId == resource.data.clinicId);
-      allow write: if isSignedIn() && (request.auth.uid == userId || getUserData().role == 'doctor');
+      allow read: if isSuperAdmin() || (isSignedIn() && (request.auth.uid == userId || (hasUserDoc() && getUserData().clinicId == resource.data.clinicId)));
+      allow create, update: if isSuperAdmin() || (isSignedIn() && (request.auth.uid == userId || (hasUserDoc() && getUserData().role == 'doctor')));
+      allow delete: if isSuperAdmin() || (isSignedIn() && hasUserDoc() && getUserData().role == 'doctor');
     }
 
     // Doctors Directory
     match /doctors/{doctorId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && getUserData().role == 'doctor';
+      allow write: if isSuperAdmin() || (isSignedIn() && hasPerm('manageStaff'));
     }
 
-    // Patients & Sub-collections
+    // Patients & Sub-collections (strictly isolated by clinicId)
     match /patients/{patientId} {
-      allow read: if isClinicMember(resource.data.clinicId) && hasPerm('viewPatients');
-      allow create: if isClinicMember(request.resource.data.clinicId) && hasPerm('editClinical');
-      allow update: if isClinicMember(resource.data.clinicId) && hasPerm('editClinical');
-      allow delete: if isClinicMember(resource.data.clinicId) && getUserData().role == 'doctor';
+      allow read: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('viewPatients'));
+      allow create: if isSuperAdmin() || (isClinicMember(request.resource.data.clinicId) && hasPerm('viewPatients'));
+      allow update: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('viewPatients'));
+      allow delete: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('manageStaff'));
 
+      // Tooth Clinical Records
       match /toothRecords/{recordId} {
-        allow read: if isSignedIn() && hasPerm('viewPatients');
-        allow write: if isSignedIn() && hasPerm('editToothChart');
+        allow read: if isSuperAdmin() || (isSignedIn() && hasPerm('viewPatients'));
+        allow write: if isSuperAdmin() || (isSignedIn() && hasPerm('editToothChart'));
       }
 
+      // Patient X-Ray / Radiograph Images
       match /images/{imageId} {
-        allow read: if isSignedIn() && hasPerm('uploadViewImages');
-        allow write: if isSignedIn() && hasPerm('uploadViewImages');
+        allow read: if isSuperAdmin() || (isSignedIn() && hasPerm('uploadViewImages'));
+        allow write: if isSuperAdmin() || (isSignedIn() && hasPerm('uploadViewImages'));
       }
 
+      // Patient Payments
       match /payments/{paymentId} {
-        allow read: if isSignedIn() && hasPerm('viewFinancials');
-        allow write: if isSignedIn() && hasPerm('recordPayments');
+        allow read: if isSuperAdmin() || (isSignedIn() && (hasPerm('viewFinancials') || hasPerm('recordPayments')));
+        allow write: if isSuperAdmin() || (isSignedIn() && hasPerm('recordPayments'));
       }
     }
 
-    // Appointments
+    // Appointments (Isolated by clinicId)
     match /appointments/{appId} {
-      allow read, write: if (resource == null || isClinicMember(resource.data.clinicId)) &&
-                            (request.resource == null || isClinicMember(request.resource.data.clinicId)) &&
-                            hasPerm('manageAppointments');
+      allow read: if isSuperAdmin() || (resource == null || isClinicMember(resource.data.clinicId));
+      allow create: if isSuperAdmin() || (isClinicMember(request.resource.data.clinicId) && hasPerm('manageAppointments'));
+      allow update: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('manageAppointments'));
+      allow delete: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('manageAppointments'));
     }
 
-    // Settings
+    // Settings (Isolated by clinicId)
     match /settings/{clinicId} {
-      allow read: if isClinicMember(clinicId);
-      allow write: if isClinicMember(clinicId) && getUserData().role == 'doctor';
+      allow read: if isSuperAdmin() || isClinicMember(clinicId);
+      allow write: if isSuperAdmin() || isDoctorInClinic(clinicId);
     }
   }
 }

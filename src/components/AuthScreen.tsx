@@ -72,34 +72,57 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
           ]
         };
 
-        // Write user, clinic, settings documents to Firestore
-        await setDoc(doc(db, 'users', uid), doctorProfile);
-        await setDoc(doc(db, 'clinics', generatedClinicId), {
-          clinicId: generatedClinicId,
-          name: clinicName.trim(),
-          ownerUid: uid,
-          createdAt: new Date().toISOString()
-        });
-        await setDoc(doc(db, 'settings', generatedClinicId), initialSettings);
+        // Write user, clinic, settings documents to Firestore with offline resilience
+        try {
+          await setDoc(doc(db, 'users', uid), doctorProfile);
+          await setDoc(doc(db, 'clinics', generatedClinicId), {
+            clinicId: generatedClinicId,
+            name: clinicName.trim(),
+            ownerUid: uid,
+            createdAt: new Date().toISOString()
+          });
+          await setDoc(doc(db, 'settings', generatedClinicId), initialSettings);
+        } catch (dbErr) {
+          console.warn('Firestore initial profile sync note (will sync when online):', dbErr);
+        }
 
+        // Cache local profile in localStorage for instant offline access
+        localStorage.setItem(`clinicpro_user_${uid}`, JSON.stringify(doctorProfile));
         onAuthenticated(doctorProfile);
       } else {
         // Sign In
         const userCred = await signInWithEmailAndPassword(auth, email.trim(), password);
         const uid = userCred.user.uid;
 
-        // Fetch user profile from Firestore
-        const userDocRef = doc(db, 'users', uid);
-        const userSnap = await getDoc(userDocRef);
+        // Fetch user profile from Firestore with offline error protection
+        let profileData: UserProfile | null = null;
+        try {
+          const userDocRef = doc(db, 'users', uid);
+          const userSnap = await getDoc(userDocRef);
+          if (userSnap.exists()) {
+            profileData = userSnap.data() as UserProfile;
+          }
+        } catch (fetchErr) {
+          console.warn('Could not read user profile from cloud Firestore directly:', fetchErr);
+          // Check local storage cached profile
+          const cached = localStorage.getItem(`clinicpro_user_${uid}`);
+          if (cached) {
+            try {
+              profileData = JSON.parse(cached);
+            } catch (e) {
+              // ignore parse error
+            }
+          }
+        }
 
-        if (userSnap.exists()) {
-          const profileData = userSnap.data() as UserProfile;
+        if (profileData) {
+          localStorage.setItem(`clinicpro_user_${uid}`, JSON.stringify(profileData));
           onAuthenticated(profileData);
         } else {
-          // Fallback if doc is not created yet
+          // Construct fallback doctor profile if doc is not retrieved
           const fallbackProfile: UserProfile = {
             uid,
-            name: userCred.user.displayName || email.split('@')[0],
+            name: userCred.user.displayName || email.split('@')[0] || 'Doctor',
             email: email.trim(),
             role: 'doctor',
             clinicId: `clinic_${uid.slice(0, 8)}`,
@@ -117,6 +140,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
               sendWhatsApp: true
             }
           };
+          localStorage.setItem(`clinicpro_user_${uid}`, JSON.stringify(fallbackProfile));
           onAuthenticated(fallbackProfile);
         }
       }

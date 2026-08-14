@@ -99,37 +99,53 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
       if (fbUser) {
+        let profile: UserProfile | null = null;
         try {
           const userDocSnap = await getDoc(doc(db, 'users', fbUser.uid));
           if (userDocSnap.exists()) {
-            setCurrentUser(userDocSnap.data() as UserProfile);
-          } else {
-            // Fallback for newly created doctor account
-            const newDocProfile: UserProfile = {
-              uid: fbUser.uid,
-              name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Doctor',
-              email: fbUser.email || '',
-              role: 'doctor',
-              clinicId: `clinic_${fbUser.uid.slice(0, 8)}`,
-              permissions: {
-                viewPatients: true,
-                editClinical: true,
-                editToothChart: true,
-                uploadViewImages: true,
-                manageAppointments: true,
-                viewFinancials: true,
-                viewPaymentAmounts: true,
-                recordPayments: true,
-                manageStaff: true,
-                accessSettings: true,
-                sendWhatsApp: true
-              }
-            };
-            setCurrentUser(newDocProfile);
+            profile = userDocSnap.data() as UserProfile;
           }
         } catch (e) {
-          console.warn('Error reading user profile:', e);
+          console.warn('Could not read user profile from cloud Firestore directly:', e);
         }
+
+        if (!profile) {
+          const cached = localStorage.getItem(`clinicpro_user_${fbUser.uid}`);
+          if (cached) {
+            try {
+              profile = JSON.parse(cached);
+            } catch (e) {
+              // ignore parse error
+            }
+          }
+        }
+
+        if (!profile) {
+          // Fallback for newly created doctor account
+          profile = {
+            uid: fbUser.uid,
+            name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Doctor',
+            email: fbUser.email || '',
+            role: 'doctor',
+            clinicId: `clinic_${fbUser.uid.slice(0, 8)}`,
+            permissions: {
+              viewPatients: true,
+              editClinical: true,
+              editToothChart: true,
+              uploadViewImages: true,
+              manageAppointments: true,
+              viewFinancials: true,
+              viewPaymentAmounts: true,
+              recordPayments: true,
+              manageStaff: true,
+              accessSettings: true,
+              sendWhatsApp: true
+            }
+          };
+        }
+
+        localStorage.setItem(`clinicpro_user_${fbUser.uid}`, JSON.stringify(profile));
+        setCurrentUser(profile);
       } else {
         setCurrentUser(null);
       }

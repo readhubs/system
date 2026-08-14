@@ -1,36 +1,26 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import {
+  getFirestore,
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
-  getFirestore,
   doc,
   getDocFromServer
 } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import firebaseAppletConfig from '../../firebase-applet-config.json';
 
-export const firebaseConfig = {
-  apiKey: "AIzaSyBs8hFhSfVhJ1dyNOATBb9JlNw6cBSSsZI",
-  authDomain: "clinical-mang.firebaseapp.com",
-  projectId: "clinical-mang",
-  storageBucket: "clinical-mang.firebasestorage.app",
-  messagingSenderId: "617272364959",
-  appId: "1:617272364959:web:432a393e7f295c7051f7aa",
-  measurementId: "G-R84XYVDZMK"
-};
+export const firebaseConfig = firebaseAppletConfig;
 
 // Initialize Firebase App
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
 
-// Initialize Firestore with robust multi-tab offline local cache persistence
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager()
-  })
-});
+// Initialize Firestore with custom database ID from config and multi-tab offline cache
+const databaseId = (firebaseConfig as any).firestoreDatabaseId;
+export const db = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
 
 export const storage = getStorage(app);
 

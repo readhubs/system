@@ -1,0 +1,6 @@
+{
+  "name": "ClinicPro Egypt - Dental Clinic PWA",
+  "description": "Complete offline-ready dental clinic management PWA with interactive dental chart, X-ray tools, WhatsApp reminders, smart scheduling, and financial reports.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

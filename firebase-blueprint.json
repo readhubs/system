@@ -1,0 +1,161 @@
+{
+  "entities": {
+    "Clinic": {
+      "title": "Clinic",
+      "description": "Clinic details and global settings",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "multiBranchEnabled": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Staff account with role and permissions",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["doctor", "assistant"] },
+        "specialty": { "type": "string" },
+        "clinicId": { "type": "string" },
+        "permissions": { "type": "object" }
+      },
+      "required": ["uid", "name", "role", "clinicId"]
+    },
+    "Doctor": {
+      "title": "Doctor",
+      "description": "Treating doctor or external referral",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["in-house", "external-referral"] },
+        "defaultCommissionPercent": { "type": "number" },
+        "phone": { "type": "string" },
+        "clinicId": { "type": "string" }
+      },
+      "required": ["name", "type", "clinicId"]
+    },
+    "Patient": {
+      "title": "Patient",
+      "description": "Patient demographic and clinical profile",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "gender": { "type": "string" },
+        "birthDate": { "type": "string" },
+        "medicalAlerts": { "type": "array" },
+        "medicalNotes": { "type": "string" },
+        "balance": { "type": "number" },
+        "hasPendingTreatment": { "type": "boolean" },
+        "toothStatus": { "type": "object" },
+        "clinicId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "phone", "clinicId"]
+    },
+    "ToothRecord": {
+      "title": "Tooth Record",
+      "description": "Procedure history record for a specific tooth",
+      "type": "object",
+      "properties": {
+        "toothNumber": { "type": "number" },
+        "procedureName": { "type": "string" },
+        "date": { "type": "string" },
+        "cost": { "type": "number" },
+        "performingDoctorId": { "type": "string" },
+        "contributingDoctorId": { "type": "string" },
+        "commissionPercent": { "type": "number" },
+        "status": { "type": "string", "enum": ["completed", "planned"] },
+        "notes": { "type": "string" }
+      },
+      "required": ["toothNumber", "procedureName", "cost", "status"]
+    },
+    "PatientImage": {
+      "title": "Patient Image",
+      "description": "Dental radiograph or intraoral photograph",
+      "type": "object",
+      "properties": {
+        "toothNumber": { "type": "number" },
+        "imageType": { "type": "string", "enum": ["Periapical", "Panoramic", "CBCT Slice", "Intraoral Photo", "Other"] },
+        "url": { "type": "string" },
+        "fileName": { "type": "string" },
+        "date": { "type": "string" },
+        "uploadedBy": { "type": "string" }
+      },
+      "required": ["url", "imageType"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Recorded patient transaction",
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "method": { "type": "string", "enum": ["Cash", "InstaPay", "Visa", "Bank", "Other"] },
+        "proofUrl": { "type": "string" },
+        "notes": { "type": "string" },
+        "remainingBalanceSnapshot": { "type": "number" }
+      },
+      "required": ["amount", "method", "date"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Scheduled patient visit",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "phone": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "doctorName": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "procedure": { "type": "string" },
+        "status": { "type": "string", "enum": ["scheduled", "confirmed", "completed", "cancelled"] },
+        "clinicId": { "type": "string" }
+      },
+      "required": ["patientId", "patientName", "date", "time", "clinicId"]
+    }
+  },
+  "firestore": {
+    "/clinics/{clinicId}": {
+      "schema": { "$ref": "#/entities/Clinic" },
+      "description": "Clinic document"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Staff account with role and permissions"
+    },
+    "/doctors/{doctorId}": {
+      "schema": { "$ref": "#/entities/Doctor" },
+      "description": "Doctors directory"
+    },
+    "/patients/{patientId}": {
+      "schema": { "$ref": "#/entities/Patient" },
+      "description": "Patient records"
+    },
+    "/patients/{patientId}/toothRecords/{recordId}": {
+      "schema": { "$ref": "#/entities/ToothRecord" },
+      "description": "Tooth procedures history"
+    },
+    "/patients/{patientId}/images/{imageId}": {
+      "schema": { "$ref": "#/entities/PatientImage" },
+      "description": "Patient dental images and radiographs"
+    },
+    "/patients/{patientId}/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/Payment" },
+      "description": "Payment transactions"
+    },
+    "/appointments/{appointmentId}": {
+      "schema": { "$ref": "#/entities/Appointment" },
+      "description": "Appointment schedule"
+    }
+  }
+}

@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper: Check if user is authenticated
+    function isSignedIn() { return request.auth != null; }
+
+    // Helper: Get user profile data
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Helper: Check clinic isolation
+    function isClinicMember(clinicId) {
+      return isSignedIn() && getUserData().clinicId == clinicId;
+    }
+
+    // Helper: Check specific permission
+    function hasPerm(permission) {
+      let data = getUserData();
+      return data.role == 'doctor' || (data.permissions != null && data.permissions[permission] == true);
+    }
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Clinics: Only clinic member doctor can write
+    match /clinics/{clinicId} {
+      allow read: if isClinicMember(clinicId);
+      allow write: if isClinicMember(clinicId) && getUserData().role == 'doctor';
+    }
+
+    // Users (Staff)
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || getUserData().clinicId == resource.data.clinicId);
+      allow write: if isSignedIn() && (request.auth.uid == userId || getUserData().role == 'doctor');
+    }
+
+    // Doctors Directory
+    match /doctors/{doctorId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && getUserData().role == 'doctor';
+    }
+
+    // Patients & Sub-collections
+    match /patients/{patientId} {
+      allow read: if isClinicMember(resource.data.clinicId) && hasPerm('viewPatients');
+      allow create: if isClinicMember(request.resource.data.clinicId) && hasPerm('editClinical');
+      allow update: if isClinicMember(resource.data.clinicId) && hasPerm('editClinical');
+      allow delete: if isClinicMember(resource.data.clinicId) && getUserData().role == 'doctor';
+
+      match /toothRecords/{recordId} {
+        allow read: if isSignedIn() && hasPerm('viewPatients');
+        allow write: if isSignedIn() && hasPerm('editToothChart');
+      }
+
+      match /images/{imageId} {
+        allow read: if isSignedIn() && hasPerm('uploadViewImages');
+        allow write: if isSignedIn() && hasPerm('uploadViewImages');
+      }
+
+      match /payments/{paymentId} {
+        allow read: if isSignedIn() && hasPerm('viewFinancials');
+        allow write: if isSignedIn() && hasPerm('recordPayments');
+      }
+    }
+
+    // Appointments
+    match /appointments/{appId} {
+      allow read, write: if (resource == null || isClinicMember(resource.data.clinicId)) &&
+                            (request.resource == null || isClinicMember(request.resource.data.clinicId)) &&
+                            hasPerm('manageAppointments');
+    }
+
+    // Settings
+    match /settings/{clinicId} {
+      allow read: if isClinicMember(clinicId);
+      allow write: if isClinicMember(clinicId) && getUserData().role == 'doctor';
+    }
+  }
+}

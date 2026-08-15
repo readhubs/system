@@ -62,14 +62,37 @@ export function SuperAdminPortal({ onExit }: SuperAdminPortalProps) {
     }
   }, [toastMessage]);
 
-  // Real-time Firestore Subscription
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Real-time Firestore Subscription with Timeout Safety
   useEffect(() => {
     setLoading(true);
-    const unsub = subscribeAllClinics((list) => {
-      setClinics(list);
+    setErrorMessage(null);
+
+    // Timeout safety fallback (4.5s max) to guarantee the screen never hangs in spinner
+    const timer = setTimeout(() => {
       setLoading(false);
-    });
-    return () => unsub();
+    }, 4500);
+
+    const unsub = subscribeAllClinics(
+      (list) => {
+        setClinics(list);
+        setLoading(false);
+        setErrorMessage(null);
+        clearTimeout(timer);
+      },
+      (err) => {
+        console.warn('SuperAdminPortal subscription error:', err);
+        setLoading(false);
+        setErrorMessage('Unable to sync live tenant list from Firestore. Please verify Super Admin permissions.');
+        clearTimeout(timer);
+      }
+    );
+
+    return () => {
+      clearTimeout(timer);
+      unsub();
+    };
   }, []);
 
   const showToast = (text: string, type: 'success' | 'error' | 'info' = 'success') => {

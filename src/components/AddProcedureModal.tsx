@@ -1,37 +1,33 @@
 import React, { useState } from 'react';
-import { Doctor, ToothRecord, ToothSurface } from '../types';
-import { Stethoscope, DollarSign, UserCheck, Shield, FileText } from 'lucide-react';
+import { Doctor, ToothRecord, ToothSurface, ProcedureCatalogItem } from '../types';
+import { DEFAULT_PROCEDURES_CATALOG } from '../lib/defaultCatalog';
+import { Stethoscope, DollarSign, UserCheck, Shield, FileText, Tag } from 'lucide-react';
 
 interface AddProcedureModalProps {
   toothNumber: number;
   doctors: Doctor[];
+  proceduresCatalog?: ProcedureCatalogItem[];
   onSubmit: (procedure: Omit<ToothRecord, 'id'>) => void;
   onClose: () => void;
 }
-
-const COMMON_DENTAL_PROCEDURES = [
-  "Root Canal Treatment (Endo)",
-  "Composite Filling (Class I / II / V)",
-  "Zirconia Crown Restoration",
-  "Porcelain Laminate Veneer",
-  "Surgical Tooth Extraction",
-  "Straumann Dental Implant Placement",
-  "Post & Core Restoration",
-  "Scaling & Polishing",
-  "Teeth Whitening (Bleaching)"
-];
 
 const SURFACES: ToothSurface[] = ['O', 'M', 'D', 'B', 'L'];
 
 export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
   toothNumber,
   doctors,
+  proceduresCatalog,
   onSubmit,
   onClose
 }) => {
-  const [procedureName, setProcedureName] = useState(COMMON_DENTAL_PROCEDURES[0]);
+  const catalog = (proceduresCatalog && proceduresCatalog.length > 0)
+    ? proceduresCatalog
+    : DEFAULT_PROCEDURES_CATALOG;
+
+  const initialItem = catalog[0];
+  const [procedureName, setProcedureName] = useState(initialItem ? initialItem.name : '');
   const [customProcedure, setCustomProcedure] = useState('');
-  const [cost, setCost] = useState<string>('');
+  const [cost, setCost] = useState<string>(initialItem ? String(initialItem.defaultPrice) : '');
   const [performingDoctorId, setPerformingDoctorId] = useState<string>(
     doctors.find((d) => d.type === 'in-house')?.id || ''
   );
@@ -40,6 +36,18 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
   const [status, setStatus] = useState<'completed' | 'planned'>('completed');
   const [notes, setNotes] = useState('');
   const [selectedSurfaces, setSelectedSurfaces] = useState<ToothSurface[]>(['O']);
+
+  const handleProcedureSelect = (name: string) => {
+    setProcedureName(name);
+    if (name === 'Other') {
+      // Keep existing cost or let user enter
+    } else {
+      const match = catalog.find((p) => p.name === name);
+      if (match) {
+        setCost(String(match.defaultPrice));
+      }
+    }
+  };
 
   const toggleSurface = (surf: ToothSurface) => {
     if (selectedSurfaces.includes(surf)) {
@@ -101,7 +109,7 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
                   Tooth #{toothNumber}
                 </span>
               </div>
-              <p className="text-xs text-slate-500">Record clinical procedure and financial commission split</p>
+              <p className="text-xs text-slate-500">Record clinical procedure with catalog pricing and manual override</p>
             </div>
           </div>
           <button
@@ -114,22 +122,29 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-sm font-medium">
-          {/* Procedure Name Selector */}
+          {/* Procedure Name Selector from Catalog */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Procedure Name *
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-sky-600" />
+                Procedure from Catalog *
+              </label>
+              <span className="text-[11px] text-sky-600 font-semibold">
+                {catalog.length} available
+              </span>
+            </div>
+
             <select
               value={procedureName}
-              onChange={(e) => setProcedureName(e.target.value)}
+              onChange={(e) => handleProcedureSelect(e.target.value)}
               className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none font-bold text-slate-800 bg-white"
             >
-              {COMMON_DENTAL_PROCEDURES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
+              {catalog.map((p) => (
+                <option key={p.id || p.name} value={p.name}>
+                  {p.name} {p.category ? `(${p.category})` : ''} — {p.defaultPrice} EGP
                 </option>
               ))}
-              <option value="Other">Other / Custom Procedure...</option>
+              <option value="Other">Custom / Unlisted Procedure...</option>
             </select>
 
             {procedureName === 'Other' && (
@@ -170,21 +185,24 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
             </div>
           </div>
 
-          {/* Cost & Status */}
+          {/* Cost (with Dynamic Price Override) & Status */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-600" /> Total Cost (EGP) *
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-600" /> Cost (EGP) *
+                </label>
+                <span className="text-[10px] text-slate-400 font-semibold">Editable override</span>
+              </div>
               <input
                 type="number"
                 required
                 min="0"
                 step="any"
-                placeholder="e.g. 500 or any custom amount"
+                placeholder="e.g. 500"
                 value={cost}
                 onChange={(e) => setCost(e.target.value)}
-                className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none font-mono font-bold text-emerald-600 text-base"
+                className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none font-mono font-bold text-emerald-600 text-base bg-emerald-50/20"
               />
             </div>
 

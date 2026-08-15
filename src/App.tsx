@@ -15,17 +15,7 @@ import {
   PermissionsMap,
   DentalLabOrder
 } from './types';
-import {
-  INITIAL_PATIENTS,
-  INITIAL_APPOINTMENTS,
-  INITIAL_PAYMENTS,
-  INITIAL_TOOTH_RECORDS,
-  INITIAL_PATIENT_IMAGES,
-  INITIAL_DOCTORS,
-  INITIAL_STAFF,
-  INITIAL_CLINIC_SETTINGS,
-  INITIAL_LAB_ORDERS
-} from './lib/mockData';
+import { DEFAULT_PROCEDURES_CATALOG } from './lib/defaultCatalog';
 
 import {
   subscribePatients,
@@ -49,7 +39,7 @@ import {
   saveStaffUserToFirestore,
   deleteStaffUserFromFirestore,
   subscribeClinicDoc,
-  seedInitialClinicDataIfEmpty,
+  ensureClinicInitialized,
   subscribeLabOrders,
   saveLabOrderToFirestore,
   deleteLabOrderFromFirestore,
@@ -91,16 +81,26 @@ export default function App() {
   // Clinic SaaS Document State
   const [clinicDoc, setClinicDoc] = useState<Clinic | null>(null);
 
-  // Application Data State
-  const [patients, setPatients] = useState<Patient[]>(INITIAL_PATIENTS);
-  const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
-  const [payments, setPayments] = useState<Payment[]>(INITIAL_PAYMENTS);
-  const [toothRecords, setToothRecords] = useState<ToothRecord[]>(INITIAL_TOOTH_RECORDS);
-  const [patientImages, setPatientImages] = useState<PatientImage[]>(INITIAL_PATIENT_IMAGES);
-  const [doctors, setDoctors] = useState<Doctor[]>(INITIAL_DOCTORS);
-  const [staffList, setStaffList] = useState<UserProfile[]>(INITIAL_STAFF);
-  const [clinicSettings, setClinicSettings] = useState<ClinicSettings>(INITIAL_CLINIC_SETTINGS);
-  const [labOrders, setLabOrders] = useState<DentalLabOrder[]>(INITIAL_LAB_ORDERS);
+  // Application Data State (Derived 100% from live Firestore queries)
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [toothRecords, setToothRecords] = useState<ToothRecord[]>([]);
+  const [patientImages, setPatientImages] = useState<PatientImage[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [staffList, setStaffList] = useState<UserProfile[]>([]);
+  const [clinicSettings, setClinicSettings] = useState<ClinicSettings>({
+    clinicId: '',
+    name: 'My Dental Clinic',
+    doctorName: '',
+    address: '',
+    phone: '',
+    languageDefault: 'en',
+    multiBranchEnabled: false,
+    onlineBookingEnabled: true,
+    proceduresCatalog: DEFAULT_PROCEDURES_CATALOG
+  });
+  const [labOrders, setLabOrders] = useState<DentalLabOrder[]>([]);
 
   const [lang, setLang] = useState<'en' | 'ar'>('en');
 
@@ -221,23 +221,29 @@ export default function App() {
 
     const cid = currentUser.clinicId;
 
-    // Seed initial demo data for new clinics if empty
+    // Ensure clinic container and settings exist in Firestore without mock data
     if (cid !== 'system') {
-      const seededKey = `clinicpro_seeded_${cid}`;
-      if (!localStorage.getItem(seededKey)) {
-        seedInitialClinicDataIfEmpty(cid, INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_DOCTORS, INITIAL_STAFF, INITIAL_CLINIC_SETTINGS)
-          .finally(() => localStorage.setItem(seededKey, 'true'));
-      }
+      ensureClinicInitialized(cid, currentUser.email, currentUser.name);
     }
 
     // Subscriptions
     const unsubClinic = subscribeClinicDoc(cid, (data) => setClinicDoc(data));
-    const unsubPatients = subscribePatients(cid, (data) => setPatients(data));
-    const unsubAppointments = subscribeAppointments(cid, (data) => setAppointments(data));
-    const unsubSettings = subscribeClinicSettings(cid, (data) => setClinicSettings(data));
-    const unsubStaff = subscribeStaffList(cid, (data) => setStaffList(data));
-    const unsubLabs = subscribeLabOrders(cid, (data) => setLabOrders(data));
-    const unsubDoctors = subscribeDoctors(cid, (data) => setDoctors(data));
+    const unsubPatients = subscribePatients(cid, (data) => setPatients(data || []));
+    const unsubAppointments = subscribeAppointments(cid, (data) => setAppointments(data || []));
+    const unsubSettings = subscribeClinicSettings(cid, (data) => {
+      if (data) {
+        setClinicSettings({
+          ...data,
+          proceduresCatalog:
+            data.proceduresCatalog && data.proceduresCatalog.length > 0
+              ? data.proceduresCatalog
+              : DEFAULT_PROCEDURES_CATALOG
+        });
+      }
+    });
+    const unsubStaff = subscribeStaffList(cid, (data) => setStaffList(data || []));
+    const unsubLabs = subscribeLabOrders(cid, (data) => setLabOrders(data || []));
+    const unsubDoctors = subscribeDoctors(cid, (data) => setDoctors(data || []));
     const unsubPayments = subscribeAllClinicPayments(cid, (data) => {
       setPayments(data || []);
     });

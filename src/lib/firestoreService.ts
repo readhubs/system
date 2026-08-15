@@ -38,7 +38,10 @@ import {
 // 1. Super Admin: Clinic Management
 // ==========================================
 
-export function subscribeAllClinics(onUpdate: (clinics: Clinic[]) => void) {
+export function subscribeAllClinics(
+  onUpdate: (clinics: Clinic[]) => void,
+  onError?: (err: any) => void
+) {
   const q = query(collection(db, 'clinics'), orderBy('createdAt', 'desc'));
   return onSnapshot(
     q,
@@ -49,7 +52,10 @@ export function subscribeAllClinics(onUpdate: (clinics: Clinic[]) => void) {
       })) as Clinic[];
       onUpdate(list);
     },
-    (err) => handleFirestoreError(err, OperationType.LIST, 'clinics')
+    (err) => {
+      console.warn('Super Admin clinics subscription error:', err);
+      if (onError) onError(err);
+    }
   );
 }
 
@@ -99,101 +105,69 @@ export async function deleteClinicFromFirestore(clinicId: string) {
 }
 
 // ==========================================
-// 2. Initial Seeding for New Clinics
+// 2. Pure Clinic Initialization (NO DEMO DATA)
 // ==========================================
 
-export async function seedInitialClinicDataIfEmpty(
+export async function ensureClinicInitialized(
   clinicId: string,
-  initialPatients: Patient[],
-  initialAppointments: Appointment[],
-  initialDoctors: Doctor[],
-  initialStaff: UserProfile[],
-  initialSettings: ClinicSettings
+  ownerEmail?: string,
+  doctorName?: string
 ) {
+  if (!clinicId || clinicId === 'system') return;
   try {
     const clinicDocRef = doc(db, 'clinics', clinicId);
     const clinicSnap = await getDoc(clinicDocRef);
 
     if (!clinicSnap.exists()) {
-      // Create primary clinic record
       const newClinic: Clinic = {
         id: clinicId,
-        name: initialSettings.name || 'ClinicPro Dental Clinic',
-        doctorName: initialSettings.doctorName || 'Dr. Clinic Owner',
-        email: initialStaff[0]?.email || '',
-        phone: initialSettings.phone || '01000000000',
+        name: 'My Dental Clinic',
+        doctorName: doctorName || 'Doctor',
+        email: ownerEmail || '',
+        ownerEmail: ownerEmail || '',
+        phone: '',
         status: 'active',
         plan: 'free_trial',
         createdAt: new Date().toISOString(),
         subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        whatsappTemplate: initialSettings.whatsappTemplate
+        subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        whatsappTemplate: `مرحباً [PatientName] 👋\nنود تذكيركم بموعدكم القادم في [ClinicName]:\n📅 التاريخ: [Date]\n⏰ الساعة: [Time]\n👨‍⚕️ الطبيب المعالج: [DoctorName]\n🦷 الإجراء: [Procedure]`
       };
-      await setDoc(clinicDocRef, newClinic);
+      await setDoc(clinicDocRef, newClinic, { merge: true });
     }
 
-    const patientsQuery = query(collection(db, 'patients'), where('clinicId', '==', clinicId), limit(1));
-    const snap = await getDocs(patientsQuery);
-
-    if (snap.empty) {
-      console.log('Seeding initial clinical data for clinic:', clinicId);
-
-      // Seed settings
-      await setDoc(doc(db, 'settings', clinicId), { ...initialSettings, clinicId, status: 'active', plan: 'free_trial' }, { merge: true });
-
-      // Seed Doctors
-      for (const docItem of initialDoctors) {
-        await setDoc(doc(db, 'doctors', docItem.id), { ...docItem, clinicId });
-      }
-
-      // Seed Patients and consolidated records
-      for (const p of initialPatients) {
-        const patientData = { ...p, clinicId };
-        await setDoc(doc(db, 'patients', p.id), patientData);
-
-        // Subcollection toothRecords
-        const defaultToothRecs: ToothRecord[] = [
-          {
-            id: `tr_${p.id}_1`,
-            toothNumber: 16,
-            procedureName: 'Root Canal Treatment (Endo)',
-            date: '2026-07-15',
-            cost: 2500,
-            performingDoctorId: 'doc_2',
-            performingDoctorName: 'Dr. Sarah Khalil',
-            status: 'completed',
-            notes: 'Completed 3-canal endo',
-            surfaces: ['O']
-          }
-        ];
-        for (const tr of defaultToothRecs) {
-          await setDoc(doc(db, 'patients', p.id, 'toothRecords', tr.id), { ...tr, clinicId });
-        }
-
-        // Subcollection payments
-        const defaultPays: Payment[] = [
-          {
-            id: `pay_${p.id}_1`,
-            patientId: p.id,
-            patientName: p.name,
-            amount: 1000,
-            date: new Date().toISOString(),
-            method: 'Cash',
-            remainingBalanceSnapshot: p.balance,
-            clinicId
-          }
-        ];
-        for (const pay of defaultPays) {
-          await setDoc(doc(db, 'patients', p.id, 'payments', pay.id), { ...pay, clinicId });
-        }
-      }
-
-      // Seed Appointments
-      for (const appt of initialAppointments) {
-        await setDoc(doc(db, 'appointments', appt.id), { ...appt, clinicId });
-      }
+    const settingsRef = doc(db, 'settings', clinicId);
+    const settingsSnap = await getDoc(settingsRef);
+    if (!settingsSnap.exists()) {
+      const initialSettings: ClinicSettings = {
+        clinicId,
+        name: 'My Dental Clinic',
+        doctorName: doctorName || 'Doctor',
+        address: '',
+        phone: '',
+        languageDefault: 'en',
+        multiBranchEnabled: false,
+        onlineBookingEnabled: true,
+        whatsappTemplate: `مرحباً [PatientName] 👋\nنود تذكيركم بموعدكم القادم في [ClinicName]:\n📅 التاريخ: [Date]\n⏰ الساعة: [Time]\n👨‍⚕️ الطبيب المعالج: [DoctorName]\n🦷 الإجراء: [Procedure]`,
+        proceduresCatalog: [
+          { id: 'proc_1', name: 'Dental Examination & Consultation', category: 'General', defaultPrice: 200 },
+          { id: 'proc_2', name: 'Scaling & Polishing (Teeth Cleaning)', category: 'Preventive', defaultPrice: 500 },
+          { id: 'proc_3', name: 'Composite Filling (Class I / II / V)', category: 'Restorative', defaultPrice: 650 },
+          { id: 'proc_4', name: 'Root Canal Treatment (Endo)', category: 'Endodontics', defaultPrice: 1800 },
+          { id: 'proc_5', name: 'Simple Tooth Extraction', category: 'Surgery', defaultPrice: 400 },
+          { id: 'proc_6', name: 'Surgical Extraction / Impacted Molar', category: 'Surgery', defaultPrice: 1500 },
+          { id: 'proc_7', name: 'Zirconia Crown Restoration', category: 'Prosthodontics', defaultPrice: 2500 },
+          { id: 'proc_8', name: 'Porcelain Laminate Veneer', category: 'Cosmetic', defaultPrice: 3000 },
+          { id: 'proc_9', name: 'Post & Core Restoration', category: 'Restorative', defaultPrice: 800 },
+          { id: 'proc_10', name: 'Dental Implant Placement', category: 'Implantology', defaultPrice: 8000 },
+          { id: 'proc_11', name: 'In-Office Teeth Whitening (Bleaching)', category: 'Cosmetic', defaultPrice: 3000 },
+          { id: 'proc_12', name: 'Pediatric Pulpotomy & Stainless Steel Crown', category: 'Pediatric', defaultPrice: 750 }
+        ]
+      };
+      await setDoc(settingsRef, initialSettings, { merge: true });
     }
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, 'seedInitialClinicDataIfEmpty');
+    console.warn('ensureClinicInitialized note:', err);
   }
 }
 

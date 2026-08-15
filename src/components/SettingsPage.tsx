@@ -3,8 +3,10 @@ import {
   ClinicSettings,
   UserProfile,
   Patient,
-  Appointment
+  Appointment,
+  ProcedureCatalogItem
 } from '../types';
+import { DEFAULT_PROCEDURES_CATALOG } from '../lib/defaultCatalog';
 import {
   Settings,
   Globe,
@@ -25,7 +27,14 @@ import {
   Info,
   Check,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Tag,
+  Plus,
+  Edit3,
+  Save,
+  RotateCcw,
+  Search,
+  DollarSign
 } from 'lucide-react';
 import { exportToCSV } from '../lib/firestoreService';
 
@@ -56,7 +65,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   lang,
   onLanguageChange
 }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'assistants' | 'whatsapp' | 'export' | 'terms'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'procedures' | 'assistants' | 'whatsapp' | 'export' | 'terms'>('profile');
 
   // Profile state
   const [name, setName] = useState(settings.name || '');
@@ -64,6 +73,21 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const [address, setAddress] = useState(settings.address || '');
   const [phone, setPhone] = useState(settings.phone || '');
   const [savedAlert, setSavedAlert] = useState(false);
+
+  // Procedures Catalog State
+  const [catalog, setCatalog] = useState<ProcedureCatalogItem[]>(
+    (settings.proceduresCatalog && settings.proceduresCatalog.length > 0)
+      ? settings.proceduresCatalog
+      : DEFAULT_PROCEDURES_CATALOG
+  );
+  const [procedureSearch, setProcedureSearch] = useState('');
+  const [newProcName, setNewProcName] = useState('');
+  const [newProcCategory, setNewProcCategory] = useState('General');
+  const [newProcPrice, setNewProcPrice] = useState('');
+  const [editingProcId, setEditingProcId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editPrice, setEditPrice] = useState('');
 
   // WhatsApp Template state
   const [whatsappTemplate, setWhatsappTemplate] = useState<string>(
@@ -91,10 +115,92 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       doctorName: doctorName.trim(),
       address: address.trim(),
       phone: phone.trim(),
-      whatsappTemplate: whatsappTemplate.trim()
+      whatsappTemplate: whatsappTemplate.trim(),
+      proceduresCatalog: catalog
     });
     setSavedAlert(true);
     setTimeout(() => setSavedAlert(false), 2500);
+  };
+
+  const handleSaveProceduresCatalog = () => {
+    onUpdateSettings({
+      ...settings,
+      proceduresCatalog: catalog
+    });
+    setSavedAlert(true);
+    setTimeout(() => setSavedAlert(false), 2500);
+  };
+
+  const handleAddProcedure = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProcName.trim()) return;
+    const priceNum = parseFloat(newProcPrice) || 0;
+    const newItem: ProcedureCatalogItem = {
+      id: `proc_${Date.now()}`,
+      name: newProcName.trim(),
+      category: newProcCategory.trim() || 'General',
+      defaultPrice: priceNum
+    };
+    const updated = [...catalog, newItem];
+    setCatalog(updated);
+    onUpdateSettings({
+      ...settings,
+      proceduresCatalog: updated
+    });
+    setNewProcName('');
+    setNewProcPrice('');
+    setSavedAlert(true);
+    setTimeout(() => setSavedAlert(false), 2500);
+  };
+
+  const handleDeleteProcedure = (procId: string) => {
+    const updated = catalog.filter((p) => p.id !== procId);
+    setCatalog(updated);
+    onUpdateSettings({
+      ...settings,
+      proceduresCatalog: updated
+    });
+  };
+
+  const handleStartEdit = (item: ProcedureCatalogItem) => {
+    setEditingProcId(item.id);
+    setEditName(item.name);
+    setEditCategory(item.category || 'General');
+    setEditPrice(String(item.defaultPrice));
+  };
+
+  const handleSaveEdit = (procId: string) => {
+    const updated = catalog.map((p) => {
+      if (p.id === procId) {
+        return {
+          ...p,
+          name: editName.trim() || p.name,
+          category: editCategory.trim() || 'General',
+          defaultPrice: parseFloat(editPrice) >= 0 ? parseFloat(editPrice) : p.defaultPrice
+        };
+      }
+      return p;
+    });
+    setCatalog(updated);
+    onUpdateSettings({
+      ...settings,
+      proceduresCatalog: updated
+    });
+    setEditingProcId(null);
+    setSavedAlert(true);
+    setTimeout(() => setSavedAlert(false), 2500);
+  };
+
+  const handleResetDefaultCatalog = () => {
+    if (window.confirm('Reset catalog to standard dental procedure template? Any custom items will be overwritten.')) {
+      setCatalog(DEFAULT_PROCEDURES_CATALOG);
+      onUpdateSettings({
+        ...settings,
+        proceduresCatalog: DEFAULT_PROCEDURES_CATALOG
+      });
+      setSavedAlert(true);
+      setTimeout(() => setSavedAlert(false), 2500);
+    }
   };
 
   const handleSaveWhatsAppTemplate = () => {
@@ -184,7 +290,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       </div>
 
       {/* Navigation Tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+      <div className="grid grid-cols-2 sm:grid-cols-6 gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
         <button
           onClick={() => setActiveTab('profile')}
           className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-[44px] ${
@@ -195,6 +301,18 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         >
           <Settings className="w-3.5 h-3.5" />
           Clinic Profile
+        </button>
+
+        <button
+          onClick={() => setActiveTab('procedures')}
+          className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-[44px] ${
+            activeTab === 'procedures'
+              ? 'bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Tag className="w-3.5 h-3.5" />
+          Procedures ({catalog.length})
         </button>
 
         <button
@@ -245,6 +363,241 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           Offline Terms
         </button>
       </div>
+
+      {/* ================================================= */}
+      {/* TAB: PROCEDURES CATALOG & PRICING                  */}
+      {/* ================================================= */}
+      {activeTab === 'procedures' && (
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Tag className="w-5 h-5 text-teal-600" />
+                <h2 className="font-bold text-slate-900 dark:text-white text-base">
+                  Procedures & Pricing Catalog
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+                  {catalog.length} Services
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Define standard services and default prices in EGP. These automatically populate dental charting with full manual price override.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleResetDefaultCatalog}
+                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5 transition-colors"
+                title="Reset to standard dental template"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reset Template
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveProceduresCatalog}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Save Catalog
+              </button>
+            </div>
+          </div>
+
+          {/* Add New Procedure Form */}
+          <form onSubmit={handleAddProcedure} className="p-4 rounded-2xl bg-teal-50/50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/40 space-y-3">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-teal-900 dark:text-teal-300 flex items-center gap-1.5">
+              <Plus className="w-4 h-4" /> Add New Procedure to Catalog
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Procedure Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Laser Gingivectomy"
+                  value={newProcName}
+                  onChange={(e) => setNewProcName(e.target.value)}
+                  className="w-full mt-1 p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium text-xs focus:outline-none focus:border-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Category</label>
+                <select
+                  value={newProcCategory}
+                  onChange={(e) => setNewProcCategory(e.target.value)}
+                  className="w-full mt-1 p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium text-xs focus:outline-none focus:border-teal-500"
+                >
+                  <option value="General">General / Consultation</option>
+                  <option value="Restorative">Restorative / Fillings</option>
+                  <option value="Endodontics">Endodontics (Root Canal)</option>
+                  <option value="Surgery">Oral Surgery / Extraction</option>
+                  <option value="Prosthodontics">Prosthodontics (Crowns & Bridges)</option>
+                  <option value="Implantology">Dental Implants</option>
+                  <option value="Periodontics">Periodontics & Gum Care</option>
+                  <option value="Cosmetic">Cosmetic & Whitening</option>
+                  <option value="Orthodontics">Orthodontics</option>
+                  <option value="Pediatric">Pediatric Dentistry</option>
+                  <option value="Preventive">Preventive & Cleaning</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Default Price (EGP) *</label>
+                <div className="flex gap-2 mt-1">
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="any"
+                    placeholder="e.g. 1200"
+                    value={newProcPrice}
+                    onChange={(e) => setNewProcPrice(e.target.value)}
+                    className="flex-1 p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-bold font-mono text-xs focus:outline-none focus:border-teal-500"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs flex items-center gap-1 shrink-0 shadow-sm transition-all active:scale-95"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search catalog by procedure name or category..."
+              value={procedureSearch}
+              onChange={(e) => setProcedureSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-teal-500"
+            />
+          </div>
+
+          {/* Catalog Items Table */}
+          <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                <thead className="bg-slate-50 dark:bg-slate-950 font-bold uppercase text-[10px] text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                  <tr>
+                    <th className="p-3.5">Procedure Name</th>
+                    <th className="p-3.5">Category</th>
+                    <th className="p-3.5">Default Price (EGP)</th>
+                    <th className="p-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {catalog
+                    .filter((p) => {
+                      const q = procedureSearch.toLowerCase();
+                      return (
+                        p.name.toLowerCase().includes(q) ||
+                        (p.category && p.category.toLowerCase().includes(q))
+                      );
+                    })
+                    .map((item) => {
+                      const isEditing = editingProcId === item.id;
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                          <td className="p-3.5 font-bold text-slate-900 dark:text-white">
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                className="p-1.5 rounded-lg border border-teal-500 bg-white dark:bg-slate-950 text-xs w-full font-bold"
+                              />
+                            ) : (
+                              item.name
+                            )}
+                          </td>
+                          <td className="p-3.5">
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editCategory}
+                                onChange={(e) => setEditCategory(e.target.value)}
+                                className="p-1.5 rounded-lg border border-teal-500 bg-white dark:bg-slate-950 text-xs w-full"
+                              />
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                {item.category || 'General'}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3.5">
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                value={editPrice}
+                                onChange={(e) => setEditPrice(e.target.value)}
+                                className="p-1.5 rounded-lg border border-teal-500 bg-white dark:bg-slate-950 text-xs w-28 font-mono font-bold text-emerald-600"
+                              />
+                            ) : (
+                              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                                {item.defaultPrice.toLocaleString()} EGP
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {isEditing ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveEdit(item.id)}
+                                    className="px-2.5 py-1 rounded-lg bg-teal-600 text-white font-bold text-xs hover:bg-teal-500"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingProcId(null)}
+                                    className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs"
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStartEdit(item)}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-colors"
+                                    title="Edit procedure"
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteProcedure(item.id)}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                                    title="Delete from catalog"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ================================================= */}
       {/* TAB 1: CLINIC PROFILE & BRANDING                   */}

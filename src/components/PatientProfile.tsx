@@ -623,6 +623,7 @@ export const PatientProfile: React.FC<PatientProfileProps> = ({
         <AddProcedureModal
           toothNumber={selectedToothNumber || 16}
           doctors={doctors}
+          proceduresCatalog={clinicSettings.proceduresCatalog}
           onSubmit={handleAddProcedureSubmit}
           onClose={() => setShowAddProcedure(false)}
         />

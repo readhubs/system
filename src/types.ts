@@ -214,6 +214,13 @@ export interface Appointment {
   reminderSentAt?: string;
 }
 
+export interface ProcedureCatalogItem {
+  id: string;
+  name: string;
+  category?: string;
+  defaultPrice: number;
+}
+
 export interface ClinicSettings {
   clinicId: string;
   name: string;
@@ -228,6 +235,7 @@ export interface ClinicSettings {
   plan?: SubscriptionPlan;
   subscriptionExpiresAt?: string;
   branches?: { id: string; name: string; address: string }[];
+  proceduresCatalog?: ProcedureCatalogItem[];
 }
 
 export interface FinancialSummary {

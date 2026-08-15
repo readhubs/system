@@ -19,7 +19,7 @@ service cloud.firestore {
     // Helper: Check if user is super admin
     function isSuperAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == 'replitoo55@gmail.com' ||
+        (request.auth.token.email != null && request.auth.token.email.lower() == 'replitoo55@gmail.com') ||
         (hasUserDoc() && getUserData().role == 'super_admin')
       );
     }

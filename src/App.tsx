@@ -170,7 +170,9 @@ export default function App() {
         }
 
         if (!profile) {
-          const isSuperAdminEmail = fbUser.email === 'replitoo55@gmail.com';
+          const isSuperAdminEmail =
+            fbUser.email === 'replitoo55@gmail.com' ||
+            fbUser.email === '203256@eru.edu.eg';
           profile = {
             uid: fbUser.uid,
             name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Doctor',
@@ -594,7 +596,9 @@ export default function App() {
 
   // 1. Super Admin Hidden Portal Route
   const isSuperAdminUser =
-    currentUser.role === 'super_admin' || currentUser.email === 'replitoo55@gmail.com';
+    currentUser.role === 'super_admin' ||
+    currentUser.email === 'replitoo55@gmail.com' ||
+    currentUser.email === '203256@eru.edu.eg';
 
   if (
     activeTab === 'system-admin-portal' ||

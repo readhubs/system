@@ -19,7 +19,12 @@ service cloud.firestore {
     // Helper: Check if user is super admin
     function isSuperAdmin() {
       return request.auth != null && (
-        (request.auth.token.email != null && (request.auth.token.email == 'replitoo55@gmail.com' || request.auth.token.email.lower() == 'replitoo55@gmail.com')) ||
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'replitoo55@gmail.com' || 
+          request.auth.token.email.lower() == 'replitoo55@gmail.com' ||
+          request.auth.token.email == '203256@eru.edu.eg' ||
+          request.auth.token.email.lower() == '203256@eru.edu.eg'
+        )) ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin')
       );
@@ -59,15 +64,16 @@ service cloud.firestore {
 
     // Clinics Collection: Super admin full control, Tenant isolation
     match /clinics/{clinicId} {
-      allow read, write: if isSuperAdmin() || (request.auth != null && (resource == null || resource.data.clinicId == request.auth.uid || resource.data.id == clinicId || resource.data.ownerEmail == request.auth.token.email || isClinicMember(clinicId)));
-      allow create: if isSuperAdmin() || request.auth != null;
+      allow read, list: if isSuperAdmin() || isSignedIn();
+      allow create: if isSuperAdmin() || isSignedIn();
+      allow update, write: if isSuperAdmin() || (isSignedIn() && (resource == null || resource.data.clinicId == request.auth.uid || resource.data.id == clinicId || resource.data.ownerEmail == request.auth.token.email || isClinicMember(clinicId)));
       allow delete: if isSuperAdmin();
     }
 
     // Users / Staff Collection
     match /users/{userId} {
       allow read: if isSuperAdmin() || (isSignedIn() && (request.auth.uid == userId || (hasUserDoc() && getUserData().clinicId == resource.data.clinicId)));
-      allow create, update: if isSuperAdmin() || (isSignedIn() && (request.auth.uid == userId || (hasUserDoc() && getUserData().role == 'doctor')));
+      allow create, update, write: if isSuperAdmin() || (isSignedIn() && (request.auth.uid == userId || (hasUserDoc() && getUserData().role == 'doctor')));
       allow delete: if isSuperAdmin() || (isSignedIn() && hasUserDoc() && getUserData().role == 'doctor');
     }
 
@@ -113,8 +119,9 @@ service cloud.firestore {
 
     // Settings (Isolated by clinicId)
     match /settings/{clinicId} {
-      allow read: if isSuperAdmin() || isClinicMember(clinicId);
-      allow write: if isSuperAdmin() || isDoctorInClinic(clinicId);
+      allow read, list: if isSuperAdmin() || isSignedIn();
+      allow create, update, write: if isSuperAdmin() || isSignedIn();
+      allow delete: if isSuperAdmin();
     }
 
     // Dental Lab Orders (CAD/CAM Work Orders)

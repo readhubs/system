@@ -26,6 +26,7 @@ import {
   updateClinicStatusInFirestore,
   updateClinicPlanInFirestore,
   saveClinicToFirestore,
+  createClinicInFirestore,
   deleteClinicFromFirestore
 } from '../lib/firestoreService';
 
@@ -122,10 +123,23 @@ export function SuperAdminPortal({ onExit }: SuperAdminPortalProps) {
     const newStatus: ClinicStatus = clinic.status === 'active' ? 'suspended' : 'active';
     setActionLoadingId(`status_${clinic.id}`);
     try {
+      // Optimistic update
+      setClinics((prev) =>
+        prev.map((c) => (c.id === clinic.id ? { ...c, status: newStatus } : c))
+      );
       await updateClinicStatusInFirestore(clinic.id, newStatus);
       showToast(`Clinic "${clinic.name}" status updated to ${newStatus.toUpperCase()}`, 'success');
-    } catch (err) {
-      showToast('Failed to update clinic status', 'error');
+    } catch (err: any) {
+      console.error('SuperAdminPortal: Failed to toggle clinic status:', {
+        code: err?.code,
+        message: err?.message,
+        error: err
+      });
+      // Rollback
+      setClinics((prev) =>
+        prev.map((c) => (c.id === clinic.id ? { ...c, status: clinic.status } : c))
+      );
+      showToast(`Failed to update clinic status: ${err?.message || 'Unknown error'}`, 'error');
     } finally {
       setActionLoadingId(null);
     }
@@ -137,10 +151,25 @@ export function SuperAdminPortal({ onExit }: SuperAdminPortalProps) {
       let days = 30;
       if (plan === 'pro_annual' || plan === 'vip_unlimited') days = 365;
       const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+      
+      // Optimistic update
+      setClinics((prev) =>
+        prev.map((c) =>
+          c.id === clinicId
+            ? { ...c, plan, subscriptionExpiresAt: expiresAt, subscriptionEndDate: expiresAt }
+            : c
+        )
+      );
+
       await updateClinicPlanInFirestore(clinicId, plan, expiresAt);
       showToast(`Subscription plan updated to ${plan.replace('_', ' ').toUpperCase()}`, 'success');
-    } catch (err) {
-      showToast('Failed to update subscription plan', 'error');
+    } catch (err: any) {
+      console.error('SuperAdminPortal: Failed to update subscription plan:', {
+        code: err?.code,
+        message: err?.message,
+        error: err
+      });
+      showToast(`Failed to update subscription plan: ${err?.message || 'Unknown error'}`, 'error');
     } finally {
       setActionLoadingId(null);
     }
@@ -154,10 +183,25 @@ export function SuperAdminPortal({ onExit }: SuperAdminPortalProps) {
       const currentExpiry = rawExpiry ? new Date(rawExpiry).getTime() : Date.now();
       const base = Math.max(Date.now(), currentExpiry);
       const newExpiry = new Date(base + additionalDays * 24 * 60 * 60 * 1000).toISOString();
+
+      // Optimistic update
+      setClinics((prev) =>
+        prev.map((c) =>
+          c.id === clinicId
+            ? { ...c, subscriptionExpiresAt: newExpiry, subscriptionEndDate: newExpiry }
+            : c
+        )
+      );
+
       await updateClinicPlanInFirestore(clinicId, clinic?.plan || 'basic_monthly', newExpiry);
       showToast(`Extended ${clinic?.name || 'Clinic'} by +${additionalDays} days successfully!`, 'success');
-    } catch (err) {
-      showToast('Failed to extend subscription', 'error');
+    } catch (err: any) {
+      console.error('SuperAdminPortal: Failed to extend subscription:', {
+        code: err?.code,
+        message: err?.message,
+        error: err
+      });
+      showToast(`Failed to extend subscription: ${err?.message || 'Unknown error'}`, 'error');
     } finally {
       setActionLoadingId(null);
     }
@@ -165,13 +209,22 @@ export function SuperAdminPortal({ onExit }: SuperAdminPortalProps) {
 
   const handleDeleteClinic = async () => {
     if (!clinicToDelete) return;
-    setActionLoadingId(`delete_${clinicToDelete.id}`);
+    const toDeleteId = clinicToDelete.id;
+    const toDeleteName = clinicToDelete.name;
+    setActionLoadingId(`delete_${toDeleteId}`);
     try {
-      await deleteClinicFromFirestore(clinicToDelete.id);
-      showToast(`Clinic "${clinicToDelete.name}" removed successfully`, 'info');
+      // Optimistic remove
+      setClinics((prev) => prev.filter((c) => c.id !== toDeleteId));
+      await deleteClinicFromFirestore(toDeleteId);
+      showToast(`Clinic "${toDeleteName}" removed successfully`, 'info');
       setClinicToDelete(null);
-    } catch (err) {
-      showToast('Failed to remove clinic record', 'error');
+    } catch (err: any) {
+      console.error('SuperAdminPortal: Failed to remove clinic:', {
+        code: err?.code,
+        message: err?.message,
+        error: err
+      });
+      showToast(`Failed to remove clinic record: ${err?.message || 'Unknown error'}`, 'error');
     } finally {
       setActionLoadingId(null);
     }
@@ -183,15 +236,15 @@ export function SuperAdminPortal({ onExit }: SuperAdminPortalProps) {
 
     setIsSubmitting(true);
     try {
-      const generatedId = `clinic_${Date.now().toString(36)}`;
+      const generatedId = `clinic_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
       const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       const newClinic: Clinic = {
         id: generatedId,
-        name: newClinicName,
-        doctorName: newDoctorName,
-        email: newEmail,
-        ownerEmail: newEmail,
-        phone: newPhone,
+        name: newClinicName.trim(),
+        doctorName: newDoctorName.trim(),
+        email: newEmail.trim(),
+        ownerEmail: newEmail.trim(),
+        phone: newPhone.trim(),
         status: 'active',
         plan: newPlan,
         createdAt: new Date().toISOString(),
@@ -200,7 +253,12 @@ export function SuperAdminPortal({ onExit }: SuperAdminPortalProps) {
         whatsappTemplate: `مرحباً [PatientName]، نذكركم بموعدكم في [ClinicName] يوم [Date] الساعة [Time]. د. [DoctorName]`
       };
 
-      await saveClinicToFirestore(newClinic);
+      // Create in Firestore
+      const createdClinic = await createClinicInFirestore(newClinic);
+
+      // Instant optimistic local state update so it appears immediately in the table
+      setClinics((prev) => [createdClinic, ...prev.filter((c) => c.id !== createdClinic.id)]);
+
       showToast(`New tenant clinic "${newClinicName}" provisioned!`, 'success');
       setShowAddClinicModal(false);
       setNewClinicName('');
@@ -208,8 +266,15 @@ export function SuperAdminPortal({ onExit }: SuperAdminPortalProps) {
       setNewEmail('');
       setNewPhone('');
       setNewPlan('free_trial');
-    } catch (err) {
-      showToast('Error creating new clinic in Firestore', 'error');
+    } catch (err: any) {
+      console.error('SuperAdminPortal: Error creating new clinic in Firestore:', {
+        code: err?.code,
+        message: err?.message,
+        stack: err?.stack,
+        error: err
+      });
+      const errorMsg = err?.code ? ` [${err.code}]: ${err.message}` : (err?.message || '');
+      showToast(`Error creating new clinic in Firestore${errorMsg}`, 'error');
     } finally {
       setIsSubmitting(false);
     }

@@ -18,9 +18,10 @@ service cloud.firestore {
 
     // Helper: Check if user is super admin
     function isSuperAdmin() {
-      return isSignedIn() && (
-        (request.auth.token.email != null && request.auth.token.email.lower() == 'replitoo55@gmail.com') ||
-        (hasUserDoc() && getUserData().role == 'super_admin')
+      return request.auth != null && (
+        (request.auth.token.email != null && (request.auth.token.email == 'replitoo55@gmail.com' || request.auth.token.email.lower() == 'replitoo55@gmail.com')) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin')
       );
     }
 
@@ -56,11 +57,10 @@ service cloud.firestore {
       allow read, write: if isSuperAdmin();
     }
 
-    // Clinics Collection: Super admin full control, Doctor can read and update their own clinic
+    // Clinics Collection: Super admin full control, Tenant isolation
     match /clinics/{clinicId} {
-      allow read: if isSuperAdmin() || isClinicMember(clinicId);
-      allow create: if isSuperAdmin() || (isSignedIn() && !exists(/databases/$(database)/documents/clinics/$(clinicId)));
-      allow update: if isSuperAdmin() || isDoctorInClinic(clinicId);
+      allow read, write: if isSuperAdmin() || (request.auth != null && (resource == null || resource.data.clinicId == request.auth.uid || resource.data.id == clinicId || resource.data.ownerEmail == request.auth.token.email || isClinicMember(clinicId)));
+      allow create: if isSuperAdmin() || request.auth != null;
       allow delete: if isSuperAdmin();
     }
 

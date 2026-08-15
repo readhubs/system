@@ -59,12 +59,56 @@ export function subscribeAllClinics(
   );
 }
 
-export async function saveClinicToFirestore(clinic: Clinic) {
+export async function createClinicInFirestore(newClinicData: Clinic): Promise<Clinic> {
   try {
-    await setDoc(doc(db, 'clinics', clinic.id), clinic, { merge: true });
-  } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, `clinics/${clinic.id}`);
+    const clinicRef = newClinicData.id 
+      ? doc(db, 'clinics', newClinicData.id)
+      : doc(collection(db, 'clinics'));
+    
+    const finalData: Clinic = {
+      ...newClinicData,
+      id: clinicRef.id
+    };
+
+    await setDoc(clinicRef, finalData, { merge: true });
+
+    // Initialize clinic settings record
+    try {
+      await setDoc(
+        doc(db, 'settings', finalData.id),
+        {
+          clinicId: finalData.id,
+          name: finalData.name,
+          doctorName: finalData.doctorName,
+          phone: finalData.phone || '',
+          languageDefault: 'en',
+          multiBranchEnabled: false,
+          onlineBookingEnabled: true,
+          whatsappTemplate:
+            finalData.whatsappTemplate ||
+            `مرحباً [PatientName]، نذكركم بموعدكم في [ClinicName] يوم [Date] الساعة [Time]. د. [DoctorName]`
+        },
+        { merge: true }
+      );
+    } catch (settingsErr) {
+      console.warn('Non-blocking settings sync warning for new clinic:', settingsErr);
+    }
+
+    return finalData;
+  } catch (err: any) {
+    console.error('[Firestore Error - Create Clinic]:', {
+      code: err?.code,
+      message: err?.message,
+      name: err?.name,
+      error: err
+    });
+    handleFirestoreError(err, OperationType.CREATE, `clinics/${newClinicData.id || 'new'}`);
+    throw err;
   }
+}
+
+export async function saveClinicToFirestore(clinic: Clinic): Promise<Clinic> {
+  return createClinicInFirestore(clinic);
 }
 
 export async function updateClinicStatusInFirestore(clinicId: string, status: ClinicStatus) {

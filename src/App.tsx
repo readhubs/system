@@ -590,13 +590,18 @@ export default function App() {
   const isSuperAdminUser =
     currentUser.role === 'super_admin' || currentUser.email === 'replitoo55@gmail.com';
 
-  if (currentHash === '#/system-admin-portal' || window.location.pathname === '/system-admin-portal') {
+  if (
+    activeTab === 'system-admin-portal' ||
+    currentHash === '#/system-admin-portal' ||
+    window.location.pathname === '/system-admin-portal'
+  ) {
     if (isSuperAdminUser) {
       return (
         <SuperAdminPortal
           onExit={() => {
             window.location.hash = '';
             setCurrentHash('');
+            setActiveTab('desk');
           }}
         />
       );
@@ -701,9 +706,14 @@ export default function App() {
           onTabChange={(tab) => {
             setActiveTab(tab);
             setSelectedPatientId(null);
+            if (tab === 'system-admin-portal') {
+              window.location.hash = '#/system-admin-portal';
+              setCurrentHash('#/system-admin-portal');
+            }
           }}
           permissions={currentUser.permissions}
           clinicSettings={clinicSettings}
+          isSuperAdmin={isSuperAdminUser}
           todayAppointmentsCount={todayAppointmentsCount}
           tomorrowAppointmentsCount={tomorrowAppointmentsCount}
           pendingFollowupsCount={pendingFollowupsCount}

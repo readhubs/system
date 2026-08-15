@@ -9,7 +9,9 @@ import {
   ClipboardList,
   DollarSign,
   Layers,
-  Activity
+  Activity,
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
 import { ClinicSettings, UserProfile } from '../types';
 
@@ -18,6 +20,7 @@ interface SidebarProps {
   onTabChange: (tab: string) => void;
   permissions: UserProfile['permissions'];
   clinicSettings: ClinicSettings;
+  isSuperAdmin?: boolean;
   todayAppointmentsCount?: number;
   tomorrowAppointmentsCount?: number;
   pendingFollowupsCount?: number;
@@ -29,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onTabChange,
   permissions,
   clinicSettings,
+  isSuperAdmin,
   todayAppointmentsCount,
   tomorrowAppointmentsCount,
   pendingFollowupsCount,
@@ -114,6 +118,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
             );
           })}
       </nav>
+
+      {/* Super Admin Access Button (Strictly visible only to super_admin or designated email) */}
+      {isSuperAdmin && (
+        <div className="pt-2 border-t border-slate-200/60">
+          <button
+            type="button"
+            onClick={() => {
+              window.location.hash = '#/system-admin-portal';
+              onTabChange('system-admin-portal');
+            }}
+            className="w-full group p-3 rounded-2xl bg-gradient-to-br from-purple-950 via-slate-900 to-indigo-950 border-2 border-purple-500/50 hover:border-purple-400 text-left shadow-lg shadow-purple-950/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="flex items-center gap-1.5 text-xs font-black text-purple-300 uppercase tracking-wider">
+                <ShieldCheck className="w-4 h-4 text-purple-400 animate-pulse" />
+                Super Admin
+              </span>
+              <span className="w-2 h-2 rounded-full bg-purple-400 ring-4 ring-purple-400/20"></span>
+            </div>
+            <p className="text-xs font-black text-white group-hover:text-purple-200 transition-colors">
+              🛡️ Super Admin Portal
+            </p>
+            <p className="text-[10px] font-medium text-slate-400 mt-0.5">
+              Manage all SaaS tenants & plans
+            </p>
+          </button>
+        </div>
+      )}
 
       {/* Multi-Branch Section */}
       {clinicSettings.multiBranchEnabled && (

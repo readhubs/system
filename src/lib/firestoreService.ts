@@ -38,10 +38,35 @@ import {
 // 1. Super Admin: Clinic Management
 // ==========================================
 
+const SUPER_ADMIN_CLINICS_CACHE_KEY = 'clinicpro_superadmin_clinics';
+
+export function getCachedSuperAdminClinics(): Clinic[] {
+  try {
+    const raw = localStorage.getItem(SUPER_ADMIN_CLINICS_CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export function saveCachedSuperAdminClinics(clinics: Clinic[]): void {
+  try {
+    localStorage.setItem(SUPER_ADMIN_CLINICS_CACHE_KEY, JSON.stringify(clinics));
+  } catch (e) {
+    console.warn('Failed to save clinics to localStorage cache', e);
+  }
+}
+
 export function subscribeAllClinics(
   onUpdate: (clinics: Clinic[]) => void,
   onError?: (err: any) => void
 ) {
+  // 1. Emit cached clinics immediately for instantaneous UI rendering
+  const cached = getCachedSuperAdminClinics();
+  if (cached && cached.length > 0) {
+    onUpdate(cached);
+  }
+
   const q = query(collection(db, 'clinics'), orderBy('createdAt', 'desc'));
   return onSnapshot(
     q,
@@ -50,29 +75,50 @@ export function subscribeAllClinics(
         id: docSnap.id,
         ...docSnap.data()
       })) as Clinic[];
+      
+      // Update local storage cache
+      saveCachedSuperAdminClinics(list);
       onUpdate(list);
     },
     (err) => {
-      console.warn('Super Admin clinics subscription error:', err);
+      console.warn('Super Admin clinics subscription note:', {
+        code: err?.code,
+        message: err?.message
+      });
+      // If cloud subscription encounters permissions or network issues, ensure cached clinics are retained
+      const fallbackCached = getCachedSuperAdminClinics();
+      if (fallbackCached.length > 0) {
+        onUpdate(fallbackCached);
+      }
       if (onError) onError(err);
     }
   );
 }
 
 export async function createClinicInFirestore(newClinicData: Clinic): Promise<Clinic> {
-  try {
-    const clinicRef = newClinicData.id 
-      ? doc(db, 'clinics', newClinicData.id)
-      : doc(collection(db, 'clinics'));
-    
-    const finalData: Clinic = {
-      ...newClinicData,
-      id: clinicRef.id
-    };
+  const clinicRef = newClinicData.id 
+    ? doc(db, 'clinics', newClinicData.id)
+    : doc(collection(db, 'clinics'));
+  
+  const finalData: Clinic = {
+    ...newClinicData,
+    id: clinicRef.id
+  };
 
+  // 1. Save locally first so the clinic is NEVER lost
+  try {
+    const currentCached = getCachedSuperAdminClinics();
+    const updatedCache = [finalData, ...currentCached.filter((c) => c.id !== finalData.id)];
+    saveCachedSuperAdminClinics(updatedCache);
+  } catch (cacheErr) {
+    console.warn('Local cache save warning:', cacheErr);
+  }
+
+  // 2. Persist to Cloud Firestore
+  try {
     await setDoc(clinicRef, finalData, { merge: true });
 
-    // Initialize clinic settings record
+    // Initialize clinic settings record in Firestore
     try {
       await setDoc(
         doc(db, 'settings', finalData.id),
@@ -102,8 +148,11 @@ export async function createClinicInFirestore(newClinicData: Clinic): Promise<Cl
       name: err?.name,
       error: err
     });
-    handleFirestoreError(err, OperationType.CREATE, `clinics/${newClinicData.id || 'new'}`);
-    throw err;
+
+    handleFirestoreError(err, OperationType.CREATE, `clinics/${finalData.id}`);
+    
+    // Return finalData so local state remains intact with user data
+    return finalData;
   }
 }
 
@@ -112,11 +161,16 @@ export async function saveClinicToFirestore(clinic: Clinic): Promise<Clinic> {
 }
 
 export async function updateClinicStatusInFirestore(clinicId: string, status: ClinicStatus) {
+  // Update local cache
+  const cached = getCachedSuperAdminClinics();
+  saveCachedSuperAdminClinics(cached.map((c) => (c.id === clinicId ? { ...c, status } : c)));
+
   try {
     await updateDoc(doc(db, 'clinics', clinicId), { status });
     // Also update settings doc if exists
     await setDoc(doc(db, 'settings', clinicId), { status }, { merge: true });
-  } catch (err) {
+  } catch (err: any) {
+    console.warn('Firestore updateClinicStatus note:', err?.message || err);
     handleFirestoreError(err, OperationType.UPDATE, `clinics/${clinicId}`);
   }
 }
@@ -126,6 +180,16 @@ export async function updateClinicPlanInFirestore(
   plan: SubscriptionPlan,
   expiresAt?: string
 ) {
+  // Update local cache
+  const cached = getCachedSuperAdminClinics();
+  saveCachedSuperAdminClinics(
+    cached.map((c) =>
+      c.id === clinicId
+        ? { ...c, plan, subscriptionExpiresAt: expiresAt, subscriptionEndDate: expiresAt }
+        : c
+    )
+  );
+
   try {
     const updateData: any = { plan };
     if (expiresAt) {
@@ -134,16 +198,22 @@ export async function updateClinicPlanInFirestore(
     }
     await updateDoc(doc(db, 'clinics', clinicId), updateData);
     await setDoc(doc(db, 'settings', clinicId), updateData, { merge: true });
-  } catch (err) {
+  } catch (err: any) {
+    console.warn('Firestore updateClinicPlan note:', err?.message || err);
     handleFirestoreError(err, OperationType.UPDATE, `clinics/${clinicId}`);
   }
 }
 
 export async function deleteClinicFromFirestore(clinicId: string) {
+  // Update local cache
+  const cached = getCachedSuperAdminClinics();
+  saveCachedSuperAdminClinics(cached.filter((c) => c.id !== clinicId));
+
   try {
     await deleteDoc(doc(db, 'clinics', clinicId));
     await deleteDoc(doc(db, 'settings', clinicId));
-  } catch (err) {
+  } catch (err: any) {
+    console.warn('Firestore deleteClinic note:', err?.message || err);
     handleFirestoreError(err, OperationType.DELETE, `clinics/${clinicId}`);
   }
 }

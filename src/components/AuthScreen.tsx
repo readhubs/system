@@ -5,7 +5,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import {
   Stethoscope,
@@ -93,14 +93,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         };
 
         try {
-          await setDoc(doc(db, 'users', uid), doctorProfile);
-          await setDoc(doc(db, 'clinics', generatedClinicId), {
+          const batch = writeBatch(db);
+          batch.set(doc(db, 'users', uid), doctorProfile);
+          batch.set(doc(db, 'clinics', generatedClinicId), {
             clinicId: generatedClinicId,
             name: clinicName.trim(),
             ownerUid: uid,
             createdAt: new Date().toISOString()
           });
-          await setDoc(doc(db, 'settings', generatedClinicId), initialSettings);
+          batch.set(doc(db, 'settings', generatedClinicId), initialSettings);
+          await batch.commit();
         } catch (dbErr) {
           console.warn('Firestore initial profile sync note:', dbErr);
         }
@@ -264,14 +266,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
       };
 
       try {
-        await setDoc(doc(db, 'users', uid), doctorProfile);
-        await setDoc(doc(db, 'clinics', generatedClinicId), {
+        const batch = writeBatch(db);
+        batch.set(doc(db, 'users', uid), doctorProfile);
+        batch.set(doc(db, 'clinics', generatedClinicId), {
           clinicId: generatedClinicId,
           name: googleClinicName.trim(),
           ownerUid: uid,
           createdAt: new Date().toISOString()
         });
-        await setDoc(doc(db, 'settings', generatedClinicId), initialSettings);
+        batch.set(doc(db, 'settings', generatedClinicId), initialSettings);
+        await batch.commit();
       } catch (dbErr) {
         console.warn('Firestore initial Google setup sync:', dbErr);
       }

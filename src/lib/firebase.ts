@@ -36,7 +36,8 @@ try {
   firestoreInstance = initializeFirestore(app, {
     localCache: persistentLocalCache({
       tabManager: persistentMultipleTabManager()
-    })
+    }),
+    ignoreUndefinedProperties: true
   });
 } catch (e) {
   // If already initialized or unsupported, fallback to getFirestore
@@ -83,6 +84,9 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   };
   console.warn('Firestore Operation Info: ', JSON.stringify(errInfo));
+  if (operationType !== OperationType.LIST && operationType !== OperationType.GET) {
+    throw error;
+  }
 }
 
 // Validation check on boot

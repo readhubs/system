@@ -191,7 +191,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               placeholder="e.g. Partial payment for Zirconia crown, receipt issued"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none"
+              className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none text-slate-900 bg-white placeholder:text-slate-400 font-medium"
             />
           </div>
 

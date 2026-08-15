@@ -25,10 +25,12 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
   const [originalSizeKb, setOriginalSizeKb] = useState<number>(0);
   const [compressedSizeKb, setCompressedSizeKb] = useState<number>(0);
   const [compressing, setCompressing] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (!selected) return;
+    setError(null);
 
     // Check if DICOM file
     if (selected.name.toLowerCase().endsWith('.dcm') || selected.type === 'application/dicom') {
@@ -49,11 +51,17 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
       const res = await compressDentalImage(selected);
       setCompressedSizeKb(res.compressedSizeKb);
       setPreviewUrl(res.dataUrl);
+      if (res.compressedSizeKb > 900) {
+        setError('Image payload is too large (>900KB). Please select a standard resolution radiograph.');
+      }
     } catch (err) {
       console.warn('Compression error, fallback:', err);
       const url = URL.createObjectURL(selected);
       setPreviewUrl(url);
       setCompressedSizeKb(origKb);
+      if (origKb > 900) {
+        setError('Image payload is too large (>900KB). Please select a standard resolution radiograph.');
+      }
     } finally {
       setCompressing(false);
     }
@@ -64,6 +72,13 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
     if (!previewUrl && !file) return;
 
     const finalUrl = previewUrl || 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&w=800&q=80';
+
+    // Validate size to protect Firestore 1MB document limit
+    const estimatedKb = Math.round((finalUrl.length * 3) / 4 / 1024);
+    if (compressedSizeKb > 900 || estimatedKb > 900) {
+      setError('Image payload exceeds the 900KB cloud document limit. Please use a compressed or smaller image.');
+      return;
+    }
 
     onUpload({
       patientId,
@@ -183,6 +198,14 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
               className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none font-semibold text-slate-800"
             />
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t border-slate-100">

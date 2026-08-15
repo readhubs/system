@@ -59,8 +59,8 @@ export const ExcelFinancialReport: React.FC<ExcelFinancialReportProps> = ({
   const totalCollected = filteredPayments.reduce((acc, p) => acc + p.amount, 0);
   const totalCash = filteredPayments.filter((p) => p.method === 'Cash').reduce((acc, p) => acc + p.amount, 0);
   const totalInstaPay = filteredPayments.filter((p) => p.method === 'InstaPay').reduce((acc, p) => acc + p.amount, 0);
-  const totalCard = filteredPayments.filter((p) => p.method === 'Card').reduce((acc, p) => acc + p.amount, 0);
-  const totalVodafone = filteredPayments.filter((p) => p.method === 'Vodafone Cash').reduce((acc, p) => acc + p.amount, 0);
+  const totalCard = filteredPayments.filter((p) => p.method === 'Visa').reduce((acc, p) => acc + p.amount, 0);
+  const totalVodafone = filteredPayments.filter((p) => p.method === 'Bank' || p.method === 'Other').reduce((acc, p) => acc + p.amount, 0);
 
   const totalOutstandingBalance = patients.reduce((acc, pat) => acc + (pat.balance > 0 ? pat.balance : 0), 0);
 
@@ -296,7 +296,7 @@ export const ExcelFinancialReport: React.FC<ExcelFinancialReportProps> = ({
                           ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                           : p.method === 'InstaPay'
                           ? 'bg-purple-100 text-purple-800 border-purple-300'
-                          : p.method === 'Vodafone Cash'
+                          : p.method === 'Other'
                           ? 'bg-rose-100 text-rose-800 border-rose-300'
                           : 'bg-sky-100 text-sky-800 border-sky-300'
                       }`}

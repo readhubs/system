@@ -139,7 +139,7 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
                 placeholder="Enter custom procedure name"
                 value={customProcedure}
                 onChange={(e) => setCustomProcedure(e.target.value)}
-                className="w-full mt-2 p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none"
+                className="w-full mt-2 p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none text-slate-900 bg-white placeholder:text-slate-400 text-sm font-medium"
               />
             )}
           </div>
@@ -225,7 +225,7 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
             <select
               value={performingDoctorId}
               onChange={(e) => setPerformingDoctorId(e.target.value)}
-              className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none bg-white"
+              className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none bg-white text-slate-900 font-medium"
             >
               {doctors
                 .filter((d) => d.type === 'in-house')
@@ -248,7 +248,7 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
                 <select
                   value={contributingDoctorId}
                   onChange={(e) => handleDoctorChange(e.target.value)}
-                  className="w-full p-2.5 text-xs rounded-xl border border-amber-300 focus:border-amber-500 outline-none bg-white font-medium"
+                  className="w-full p-2.5 text-xs rounded-xl border border-amber-300 focus:border-amber-500 outline-none bg-white text-slate-900 font-medium"
                 >
                   <option value="">None (No external referral commission)</option>
                   {doctors.map((doc) => (
@@ -269,7 +269,7 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
                   disabled={!contributingDoctorId}
                   value={commissionPercent}
                   onChange={(e) => setCommissionPercent(e.target.value)}
-                  className="w-full p-2.5 text-xs rounded-xl border border-amber-300 focus:border-amber-500 outline-none font-mono font-bold bg-white text-amber-900 disabled:opacity-50"
+                  className="w-full p-2.5 text-xs rounded-xl border border-amber-300 focus:border-amber-500 outline-none font-mono font-bold bg-white text-amber-900 placeholder:text-amber-600/60 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -294,7 +294,7 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
               placeholder="Instrumentation details, materials used, shade, prognosis..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none"
+              className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none text-slate-900 bg-white placeholder:text-slate-400 font-medium"
             />
           </div>
 

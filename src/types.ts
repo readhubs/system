@@ -62,7 +62,7 @@ export type ToothStatus = 'healthy' | 'treated' | 'needs-treatment' | 'extracted
 
 export type ToothSurface = 'O' | 'M' | 'D' | 'B' | 'L'; // Occlusal, Mesial, Distal, Buccal, Lingual
 
-export type LabOrderStatus = 'Sent' | 'In Progress' | 'Delivered' | 'Fitted' | 'Cancelled';
+export type LabOrderStatus = 'Sent to Lab' | 'Received' | 'Fitted' | 'Remake/Adjustment' | 'Sent' | 'In Progress' | 'Delivered' | 'Cancelled';
 
 export type DentalShade =
   | 'A1'
@@ -88,6 +88,7 @@ export type DentalShade =
   | 'Custom';
 
 export type RestorationType =
+  | 'Crown - Zirconia'
   | 'Zirconia Crown'
   | 'E-Max / Lithium Disilicate'
   | 'PFM (Porcelain Fused to Metal)'
@@ -111,15 +112,17 @@ export interface DentalLabOrder {
   toothNumbers: number[];
   restorationType: RestorationType;
   shade: DentalShade | string;
-  dateSent: string;
-  expectedReturnDate: string;
+  dateSent?: string;
+  orderDate?: string;
+  expectedReturnDate?: string;
+  dueDate?: string;
   receivedDate?: string;
   fittedDate?: string;
   status: LabOrderStatus;
   cost: number;
   notes?: string;
   attachmentUrls?: string[];
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface Patient {

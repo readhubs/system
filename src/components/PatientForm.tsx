@@ -69,34 +69,38 @@ export const PatientForm: React.FC<PatientFormProps> = ({
       return;
     }
 
-    onSubmit({
+    const payload: any = {
       name: name.trim(),
       phone: phone.trim(),
       gender,
-      birthDate: birthDate || undefined,
-      age: age ? parseInt(age, 10) : undefined,
-      occupation: occupation.trim() || undefined,
-      address: address.trim() || undefined,
-      medicalAlerts,
-      medicalNotes: medicalNotes.trim(),
       clinicId: initialData?.clinicId || clinicId
-    });
+    };
+
+    if (birthDate) payload.birthDate = birthDate;
+    if (age) payload.age = parseInt(age, 10);
+    if (occupation.trim()) payload.occupation = occupation.trim();
+    if (address.trim()) payload.address = address.trim();
+    if (medicalAlerts.length > 0) payload.medicalAlerts = medicalAlerts;
+    else payload.medicalAlerts = [];
+    if (medicalNotes.trim()) payload.medicalNotes = medicalNotes.trim();
+
+    onSubmit(payload);
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 my-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl border border-slate-100 my-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400 rounded-2xl">
+            <div className="p-3 bg-sky-100 text-sky-700 rounded-2xl">
               <UserPlus className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900">
                 {initialData ? 'Edit Patient File' : 'Fast Patient Registration'}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-500">
                 Only Name & Phone required for instant record creation
               </p>
             </div>
@@ -104,21 +108,21 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-2 text-xl font-bold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="text-slate-400 hover:text-slate-700 p-2 text-xl font-bold rounded-xl hover:bg-slate-100"
           >
             ✕
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
+        <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200">
           <button
             type="button"
             onClick={() => setActiveTab('general')}
             className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-[44px] ${
               activeTab === 'general'
-                ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-white text-sky-700 shadow-sm border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <User className="w-3.5 h-3.5" />
@@ -130,8 +134,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
             onClick={() => setActiveTab('medical')}
             className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-[44px] ${
               activeTab === 'medical'
-                ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-white text-amber-800 shadow-sm border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Heart className="w-3.5 h-3.5" />
@@ -143,8 +147,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
             onClick={() => setActiveTab('notes')}
             className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-[44px] ${
               activeTab === 'notes'
-                ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-white text-indigo-700 shadow-sm border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -157,8 +161,8 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           {activeTab === 'general' && (
             <div className="space-y-4 animate-in fade-in">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1">
-                  <User className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                  <User className="w-3.5 h-3.5 text-sky-600" />
                   Full Name (اسم المريض) <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -167,13 +171,13 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   placeholder="e.g. Ahmed Mahmoud El-Sayed"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white focus:border-sky-500 outline-none text-sm font-semibold min-h-[48px]"
+                  className="w-full p-3.5 rounded-2xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-sky-500 outline-none text-sm font-semibold min-h-[48px]"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                  <Phone className="w-3.5 h-3.5 text-sky-600" />
                   Mobile / WhatsApp (الموبايل) <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -182,13 +186,13 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   placeholder="01012345678"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white focus:border-sky-500 outline-none text-sm font-mono min-h-[48px]"
+                  className="w-full p-3.5 rounded-2xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-sky-500 outline-none text-sm font-mono min-h-[48px]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Gender (النوع)</label>
+                  <label className="text-xs font-bold text-slate-700">Gender (النوع)</label>
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -196,7 +200,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                       className={`flex-1 py-3 rounded-xl text-xs font-bold border transition-all min-h-[44px] ${
                         gender === 'Male'
                           ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
-                          : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                       }`}
                     >
                       Male (ذكر)
@@ -207,7 +211,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                       className={`flex-1 py-3 rounded-xl text-xs font-bold border transition-all min-h-[44px] ${
                         gender === 'Female'
                           ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
-                          : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                       }`}
                     >
                       Female (أنثى)
@@ -216,7 +220,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Age (السن)</label>
+                  <label className="text-xs font-bold text-slate-700">Age (السن)</label>
                   <input
                     type="number"
                     min="1"
@@ -224,7 +228,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                     placeholder="e.g. 28"
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm min-h-[44px]"
+                    className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm min-h-[44px] focus:border-sky-500 outline-none"
                   />
                 </div>
               </div>
@@ -235,10 +239,10 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           {activeTab === 'medical' && (
             <div className="space-y-4 animate-in fade-in">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                   <AlertTriangle className="w-4 h-4 text-amber-500" /> Quick Medical Conditions
                 </label>
-                <span className="text-[11px] text-slate-400">1-Tap Chip Toggles</span>
+                <span className="text-[11px] text-slate-500">1-Tap Chip Toggles</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -251,17 +255,17 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                       onClick={() => toggleAlert(cond)}
                       className={`p-3 rounded-xl text-xs font-bold text-left border flex items-center justify-between transition-all min-h-[44px] ${
                         isSelected
-                          ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800 shadow-xs'
-                          : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                          ? 'bg-rose-50 text-rose-800 border-rose-300 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-100'
                       }`}
                     >
                       <span>{cond}</span>
                       {isSelected ? (
-                        <span className="w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px]">
+                        <span className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px]">
                           ✓
                         </span>
                       ) : (
-                        <span className="w-5 h-5 rounded-full border border-slate-300 dark:border-slate-700"></span>
+                        <span className="w-5 h-5 rounded-full border border-slate-300"></span>
                       )}
                     </button>
                   );
@@ -269,7 +273,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
               </div>
 
               <div className="space-y-1 pt-2">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                <label className="text-xs font-bold text-slate-700">
                   Other Allergies or Chronic Conditions
                 </label>
                 <textarea
@@ -277,7 +281,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   placeholder="e.g. Allergy to Sulfa drugs, taking Blood pressure med Coversyl daily"
                   value={medicalNotes}
                   onChange={(e) => setMedicalNotes(e.target.value)}
-                  className="w-full p-3 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs outline-none focus:border-amber-500"
+                  className="w-full p-3 rounded-2xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-xs outline-none focus:border-amber-500"
                 />
               </div>
             </div>
@@ -287,7 +291,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           {activeTab === 'notes' && (
             <div className="space-y-4 animate-in fade-in">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
                   <Briefcase className="w-3.5 h-3.5 text-slate-500" />
                   Occupation (المهنة)
                 </label>
@@ -296,12 +300,12 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   placeholder="e.g. Teacher, Engineer, Student"
                   value={occupation}
                   onChange={(e) => setOccupation(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm"
+                  className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:border-sky-500 outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-slate-500" />
                   Address / City (العنوان)
                 </label>
@@ -310,12 +314,12 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   placeholder="e.g. Nasr City, Cairo"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm"
+                  className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:border-sky-500 outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-slate-500" />
                   Exact Date of Birth (اختياري)
                 </label>
@@ -323,18 +327,18 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   type="date"
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-mono"
+                  className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm font-mono focus:border-sky-500 outline-none"
                 />
               </div>
             </div>
           )}
 
           {/* Action Footer */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all min-h-[48px]"
+              className="px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all min-h-[48px]"
             >
               Cancel
             </button>

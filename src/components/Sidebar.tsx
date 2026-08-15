@@ -1,27 +1,26 @@
 import React from 'react';
-import { PermissionsMap, ClinicSettings } from '../types';
 import {
-  LayoutDashboard,
   Users,
   Calendar,
-  Layers,
-  Sparkles,
-  DollarSign,
   Settings,
+  LayoutDashboard,
+  LogOut,
   MapPin,
-  Send,
-  Clock,
+  ClipboardList,
+  DollarSign,
+  Layers,
   Activity
 } from 'lucide-react';
+import { ClinicSettings, UserProfile } from '../types';
 
 interface SidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
-  permissions: PermissionsMap;
+  permissions: UserProfile['permissions'];
   clinicSettings: ClinicSettings;
   todayAppointmentsCount?: number;
-  pendingFollowupsCount?: number;
   tomorrowAppointmentsCount?: number;
+  pendingFollowupsCount?: number;
   activeLabOrdersCount?: number;
 }
 
@@ -30,79 +29,56 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onTabChange,
   permissions,
   clinicSettings,
-  todayAppointmentsCount = 0,
-  pendingFollowupsCount = 0,
-  tomorrowAppointmentsCount = 0,
-  activeLabOrdersCount = 0
+  todayAppointmentsCount,
+  tomorrowAppointmentsCount,
+  pendingFollowupsCount,
+  activeLabOrdersCount
 }) => {
   const navItems = [
     {
-      id: 'dashboard',
-      label: 'Dashboard',
+      id: 'desk',
+      label: 'Desk',
       icon: LayoutDashboard,
       visible: true
     },
     {
-      id: 'today',
-      label: "Today's Clinic Queue",
-      icon: Clock,
-      badge: todayAppointmentsCount > 0 ? todayAppointmentsCount : undefined,
-      badgeColor: 'bg-emerald-600 text-white animate-pulse',
-      visible: permissions.manageAppointments
-    },
-    {
       id: 'patients',
-      label: 'Patients & Odontogram',
+      label: 'Patients',
       icon: Users,
       visible: permissions.viewPatients
     },
     {
       id: 'appointments',
-      label: 'Schedule & Calendar',
+      label: 'Calendar',
       icon: Calendar,
-      visible: permissions.manageAppointments
+      badge: todayAppointmentsCount ? todayAppointmentsCount : undefined,
+      visible: true
     },
     {
-      id: 'labs',
-      label: 'Dental Labs & CAD/CAM',
-      icon: Layers,
-      badge: activeLabOrdersCount > 0 ? activeLabOrdersCount : undefined,
-      badgeColor: 'bg-purple-600 text-white',
+      id: 'operations',
+      label: 'Operations',
+      icon: Activity,
+      badge: (activeLabOrdersCount || 0) + (pendingFollowupsCount || 0) > 0 ? (activeLabOrdersCount || 0) + (pendingFollowupsCount || 0) : undefined,
+      badgeColor: 'bg-rose-100 text-rose-700',
       visible: permissions.editClinical !== false
     },
     {
-      id: 'followups',
-      label: 'WhatsApp Follow-ups',
-      icon: Send,
-      badge: tomorrowAppointmentsCount > 0 ? tomorrowAppointmentsCount : undefined,
-      badgeColor: 'bg-emerald-500 text-white',
-      visible: permissions.sendWhatsApp !== false
-    },
-    {
-      id: 'smart-scheduler',
-      label: 'Smart Recall Radar',
-      icon: Sparkles,
-      badge: pendingFollowupsCount > 0 ? pendingFollowupsCount : undefined,
-      badgeColor: 'bg-amber-500 text-white',
-      visible: permissions.manageAppointments
-    },
-    {
       id: 'financials',
-      label: 'Financial Reports',
+      label: 'Financials',
       icon: DollarSign,
       visible: permissions.viewFinancials
     },
     {
       id: 'settings',
-      label: 'Clinic Settings & Staff',
+      label: 'Settings',
       icon: Settings,
       visible: permissions.accessSettings
     }
   ];
 
   return (
-    <aside className="w-full md:w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-4 space-y-6 shrink-0 no-print">
-      <nav className="space-y-1.5">
+    <aside className="w-full md:w-56 bg-transparent border-r border-slate-200/50 p-4 space-y-4 shrink-0 no-print">
+      <nav className="space-y-1">
         {navItems
           .filter((item) => item.visible)
           .map((item) => {
@@ -114,21 +90,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => onTabChange(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl font-black text-xs transition-all ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold text-sm transition-all ${
                   isActive
-                    ? 'bg-sky-600 text-white shadow-md shadow-sky-600/20'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
+                    : 'text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 border border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-slate-900' : 'text-slate-400'}`} />
                   <span>{item.label}</span>
                 </div>
 
                 {item.badge !== undefined && (
                   <span
-                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                      item.badgeColor || (isActive ? 'bg-white text-sky-800' : 'bg-sky-100 text-sky-800')
+                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                      item.badgeColor || (isActive ? 'bg-slate-100 text-slate-600' : 'bg-slate-200/50 text-slate-500')
                     }`}
                   >
                     {item.badge}
@@ -141,17 +117,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Multi-Branch Section */}
       {clinicSettings.multiBranchEnabled && (
-        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
-          <p className="px-3 text-[10px] font-black uppercase tracking-wider text-slate-400">
-            Clinic Branches
+        <div className="pt-4 space-y-1">
+          <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+            Branches
           </p>
 
           {clinicSettings.branches?.map((b) => (
             <div
               key={b.id}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800"
+              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-500"
             >
-              <MapPin className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <span className="truncate">{b.name}</span>
             </div>
           ))}

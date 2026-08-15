@@ -28,8 +28,7 @@ service cloud.firestore {
     function isClinicMember(clinicId) {
       return isSignedIn() && (
         isSuperAdmin() || 
-        !hasUserDoc() || 
-        getUserData().clinicId == clinicId
+        (hasUserDoc() && getUserData().clinicId == clinicId)
       );
     }
 
@@ -37,7 +36,7 @@ service cloud.firestore {
     function isDoctorInClinic(clinicId) {
       return isSuperAdmin() || (
         isClinicMember(clinicId) && 
-        (!hasUserDoc() || getUserData().role == 'doctor')
+        (hasUserDoc() && getUserData().role == 'doctor')
       );
     }
 
@@ -45,9 +44,10 @@ service cloud.firestore {
     function hasPerm(permission) {
       return isSignedIn() && (
         isSuperAdmin() ||
-        !hasUserDoc() ||
-        getUserData().role == 'doctor' ||
-        (getUserData().permissions != null && getUserData().permissions[permission] == true)
+        (hasUserDoc() && (
+          getUserData().role == 'doctor' ||
+          (getUserData().permissions != null && getUserData().permissions[permission] == true)
+        ))
       );
     }
 
@@ -123,6 +123,15 @@ service cloud.firestore {
       allow create: if isSuperAdmin() || (isClinicMember(request.resource.data.clinicId) && hasPerm('editClinical'));
       allow update: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('editClinical'));
       allow delete: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('manageStaff'));
+    }
+
+    // Collection Group Queries for Financials & Dashboards
+    match /{path=**}/payments/{paymentId} {
+      allow read: if isSuperAdmin() || (resource != null && isClinicMember(resource.data.clinicId) && (hasPerm('viewFinancials') || hasPerm('recordPayments')));
+    }
+    
+    match /{path=**}/toothRecords/{recordId} {
+      allow read: if isSuperAdmin() || (resource != null && isClinicMember(resource.data.clinicId) && hasPerm('viewPatients'));
     }
 
     // Connection Health Check

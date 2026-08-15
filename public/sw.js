@@ -49,7 +49,7 @@ self.addEventListener('fetch', (event) => {
             return cachedResponse;
           }
           if (event.request.mode === 'navigate') {
-            return caches.match(new URL('index.html', self.registration.scope).href);
+            return caches.match(new URL('/', self.registration.scope).href);
           }
         });
       })

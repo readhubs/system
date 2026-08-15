@@ -512,7 +512,9 @@ export function AssistantDashboard({
       {showReceipt && lastPayment && (
         <ReceiptModal
           payment={lastPayment}
-          patient={patients.find((p) => p.id === lastPayment.patientId)!}
+          patientName={patients.find((p) => p.id === lastPayment.patientId)?.name || 'Unknown'}
+          patientPhone={patients.find((p) => p.id === lastPayment.patientId)?.phone || ''}
+          procedures={[]}
           clinicSettings={clinicSettings}
           onClose={() => setShowReceipt(false)}
         />

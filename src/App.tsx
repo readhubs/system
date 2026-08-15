@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged, signOut as firebaseSignOut, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
@@ -67,14 +67,12 @@ import {
 import { AuthScreen } from './components/AuthScreen';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
+import { OperationsHub } from './components/OperationsHub';
+import { DeskPage } from './components/DeskPage';
 import { Dashboard } from './components/Dashboard';
-import { TodayClinicPage } from './components/TodayClinicPage';
 import { PatientsPage } from './components/PatientsPage';
 import { PatientProfile } from './components/PatientProfile';
 import { AppointmentsPage } from './components/AppointmentsPage';
-import { DentalLabsPage } from './components/DentalLabsPage';
-import { FollowUpsPage } from './components/FollowUpsPage';
-import { SmartScheduler } from './components/SmartScheduler';
 import { FinancialReportsPage } from './components/FinancialReportsPage';
 import { SettingsPage } from './components/SettingsPage';
 import { PatientForm } from './components/PatientForm';
@@ -108,7 +106,7 @@ export default function App() {
 
   // Navigation State & GitHub Pages Hash Routing
   const [currentHash, setCurrentHash] = useState<string>(window.location.hash || '');
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [activeTab, setActiveTab] = useState<string>('desk');
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
   // Modals
@@ -225,7 +223,11 @@ export default function App() {
 
     // Seed initial demo data for new clinics if empty
     if (cid !== 'system') {
-      seedInitialClinicDataIfEmpty(cid, INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_DOCTORS, INITIAL_STAFF, INITIAL_CLINIC_SETTINGS);
+      const seededKey = `clinicpro_seeded_${cid}`;
+      if (!localStorage.getItem(seededKey)) {
+        seedInitialClinicDataIfEmpty(cid, INITIAL_PATIENTS, INITIAL_APPOINTMENTS, INITIAL_DOCTORS, INITIAL_STAFF, INITIAL_CLINIC_SETTINGS)
+          .finally(() => localStorage.setItem(seededKey, 'true'));
+      }
     }
 
     // Subscriptions
@@ -237,14 +239,10 @@ export default function App() {
     const unsubLabs = subscribeLabOrders(cid, (data) => setLabOrders(data));
     const unsubDoctors = subscribeDoctors(cid, (data) => setDoctors(data));
     const unsubPayments = subscribeAllClinicPayments(cid, (data) => {
-      if (data && data.length > 0) {
-        setPayments(data);
-      }
+      setPayments(data || []);
     });
     const unsubToothRecords = subscribeAllClinicToothRecords(cid, (data) => {
-      if (data && data.length > 0) {
-        setToothRecords(data);
-      }
+      setToothRecords(data || []);
     });
 
     return () => {
@@ -264,45 +262,32 @@ export default function App() {
   useEffect(() => {
     if (!selectedPatientId || !currentUser?.clinicId) return;
 
-    const unsubTooth = subscribeToothRecords(selectedPatientId, (recs) => {
-      setToothRecords((prev) => [
-        ...prev.filter((r) => r.patientId !== selectedPatientId),
-        ...recs.map((r) => ({ ...r, patientId: selectedPatientId }))
-      ]);
-    });
-
     const unsubImgs = subscribePatientImages(selectedPatientId, (imgs) => {
-      setPatientImages((prev) => [
-        ...prev.filter((i) => i.patientId !== selectedPatientId),
-        ...imgs.map((i) => ({ ...i, patientId: selectedPatientId }))
-      ]);
-    });
-
-    const unsubPays = subscribePatientPayments(selectedPatientId, (pays) => {
-      setPayments((prev) => [
-        ...prev.filter((p) => p.patientId !== selectedPatientId),
-        ...pays.map((p) => ({ ...p, patientId: selectedPatientId }))
-      ]);
+      setPatientImages(imgs.map((i) => ({ ...i, patientId: selectedPatientId })));
     });
 
     return () => {
-      unsubTooth();
       unsubImgs();
-      unsubPays();
     };
   }, [selectedPatientId, currentUser?.clinicId]);
+
+  // Keep a stable ref for appointments to prevent 60s timer reset thrashing
+  const appointmentsRef = useRef(appointments);
+  useEffect(() => {
+    appointmentsRef.current = appointments;
+  }, [appointments]);
 
   // 4. Notification timers
   useEffect(() => {
     requestNotificationPermission();
 
     const interval = setInterval(() => {
-      checkUpcomingAppointmentsAndNotify(appointments);
-      checkDaily7AMSummaryAndNotify(appointments);
+      checkUpcomingAppointmentsAndNotify(appointmentsRef.current);
+      checkDaily7AMSummaryAndNotify(appointmentsRef.current);
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [appointments]);
+  }, []);
 
   // Online / Offline & PWA Listeners
   useEffect(() => {
@@ -348,14 +333,22 @@ export default function App() {
   };
 
   // Action Handlers
-  const handleAddPatient = async (pData: Omit<Patient, 'id' | 'createdAt' | 'clinicId'>) => {
+  const handleAddPatient = async (pData: Omit<Patient, 'id' | 'createdAt' | 'balance' | 'hasPendingTreatment' | 'toothStatus'>) => {
     const cid = currentUser?.clinicId || 'clinic_cairo_1';
     const newPatient: Patient = {
+      balance: 0,
+      hasPendingTreatment: false,
+      toothStatus: {},
       ...pData,
       id: `p_${Date.now()}`,
       createdAt: new Date().toISOString().split('T')[0],
       clinicId: cid
     };
+
+    // Strip undefined
+    Object.keys(newPatient).forEach(key => {
+      if ((newPatient as any)[key] === undefined) delete (newPatient as any)[key];
+    });
 
     setPatients([newPatient, ...patients]);
     await savePatientToFirestore(newPatient);
@@ -364,6 +357,11 @@ export default function App() {
   };
 
   const handleUpdatePatient = async (updated: Patient) => {
+    // Strip undefined
+    Object.keys(updated).forEach(key => {
+      if ((updated as any)[key] === undefined) delete (updated as any)[key];
+    });
+
     setPatients(patients.map((p) => (p.id === updated.id ? updated : p)));
     await savePatientToFirestore(updated);
   };
@@ -383,6 +381,11 @@ export default function App() {
       id: `rec_${Date.now()}`,
       patientId: selectedPatientId
     };
+
+    Object.keys(newRecord).forEach(key => {
+      if ((newRecord as any)[key] === undefined) delete (newRecord as any)[key];
+    });
+
     setToothRecords([newRecord, ...toothRecords]);
     await saveToothRecordToFirestore(selectedPatientId, newRecord, currentUser.clinicId);
   };
@@ -526,6 +529,53 @@ export default function App() {
 
   // Auth Gate: Require authenticated user profile
   if (!currentUser) {
+    if (currentHash.startsWith('#book-')) {
+      const targetClinicId = currentHash.replace('#book-', '');
+      return (
+        <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+          <PublicBookingModal
+            settings={{ ...clinicSettings, clinicId: targetClinicId }}
+            doctors={doctors}
+            onClose={() => {
+              window.location.hash = '';
+              setCurrentHash('');
+            }}
+            onBookAppointment={async (bookingData) => {
+              const patientObj: Patient = {
+                id: `p_online_${Date.now()}`,
+                name: bookingData.patientName,
+                phone: bookingData.phone,
+                gender: 'Male',
+                birthDate: '1990-01-01',
+                medicalAlerts: [],
+                medicalNotes: 'Online self-booked appointment',
+                balance: 0,
+                hasPendingTreatment: false,
+                toothStatus: {},
+                clinicId: targetClinicId,
+                createdAt: new Date().toISOString().split('T')[0]
+              };
+              try { await savePatientToFirestore(patientObj); } catch (e) { console.warn(e); }
+              const newApp: Appointment = {
+                id: `app_${Date.now()}`,
+                patientId: patientObj.id,
+                patientName: bookingData.patientName,
+                phone: bookingData.phone,
+                doctorId: bookingData.doctorId,
+                date: bookingData.date,
+                time: bookingData.time,
+                procedure: bookingData.procedure,
+                status: 'scheduled',
+                clinicId: targetClinicId,
+                notes: 'Self-scheduled via Public Online Booking Portal'
+              };
+              try { await saveAppointmentToFirestore(newApp); } catch (e) { console.warn(e); }
+            }}
+          />
+        </div>
+      );
+    }
+
     return (
       <AuthScreen
         onAuthenticated={(profile) => {
@@ -661,150 +711,130 @@ export default function App() {
         />
 
         {/* Content Workspace Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-          {/* If a patient is selected, show PatientProfile view */}
-          {activePatient ? (
-            <PatientProfile
-              patient={activePatient}
-              toothRecords={toothRecords.filter((r) => r.patientId === activePatient.id)}
-              patientImages={patientImages.filter((i) => i.patientId === activePatient.id)}
-              payments={payments.filter((p) => p.patientId === activePatient.id)}
-              doctors={doctors}
-              clinicSettings={clinicSettings}
-              labOrders={labOrders}
-              onUpdatePatient={handleUpdatePatient}
-              onAddToothRecord={handleAddToothRecord}
-              onAddPatientImage={handleAddPatientImage}
-              onAddPayment={handleAddPayment}
-              onDeleteToothRecord={handleDeleteToothRecord}
-              onDeletePatientImage={handleDeletePatientImage}
-              onDeletePayment={handleDeletePayment}
-              onDeletePatient={handleDeletePatient}
-              onDeleteLabOrder={handleDeleteLabOrder}
-              onBack={() => setSelectedPatientId(null)}
-              onEditPatientModalOpen={() => {
-                setEditingPatient(activePatient);
-                setShowAddPatientModal(true);
-              }}
-            />
-          ) : (
-            <>
-              {/* TAB 1: DASHBOARD */}
-              {activeTab === 'dashboard' && (
-                <Dashboard
-                  patients={patients}
-                  appointments={appointments}
-                  payments={payments}
-                  onNavigate={(tab) => setActiveTab(tab)}
-                  onOpenAddPatient={() => {
-                    setEditingPatient(undefined);
-                    setShowAddPatientModal(true);
-                  }}
-                  onSelectPatient={(pId) => setSelectedPatientId(pId)}
-                />
-              )}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto relative">
+          <>
+            {/* TAB 1: DESK (HOME) */}
+            {activeTab === 'desk' && (
+              <DeskPage
+                patients={patients}
+                appointments={appointments}
+                payments={payments}
+                doctors={doctors}
+                clinicSettings={clinicSettings}
+                onNavigate={(tab) => setActiveTab(tab)}
+                onOpenAddPatient={() => {
+                  setEditingPatient(undefined);
+                  setShowAddPatientModal(true);
+                }}
+                onSelectPatient={(pId) => setSelectedPatientId(pId)}
+                onUpdateAppointmentStatus={handleUpdateAppointmentStatus}
+                onAddAppointment={handleAddAppointment}
+                onAddPayment={handleAddPayment}
+                onDeleteAppointment={handleDeleteAppointment}
+              />
+            )}
 
-              {/* TAB 2: TODAY CLINIC QUEUE */}
-              {activeTab === 'today' && (
-                <TodayClinicPage
-                  appointments={appointments}
-                  patients={patients}
-                  doctors={doctors}
-                  clinicSettings={clinicSettings}
-                  onUpdateStatus={handleUpdateAppointmentStatus}
-                  onAddAppointment={handleAddAppointment}
-                  onAddPayment={handleAddPayment}
-                  onDeleteAppointment={handleDeleteAppointment}
-                  onSelectPatient={(patient) => setSelectedPatientId(patient.id)}
-                />
-              )}
+            {/* TAB 2: PATIENTS */}
+            {activeTab === 'patients' && (
+              <PatientsPage
+                patients={patients}
+                onSelectPatient={(pId) => setSelectedPatientId(pId)}
+                onOpenAddPatientModal={() => {
+                  setEditingPatient(undefined);
+                  setShowAddPatientModal(true);
+                }}
+                onDeletePatient={handleDeletePatient}
+              />
+            )}
 
-              {/* TAB 3: PATIENTS & ODONTOGRAM */}
-              {activeTab === 'patients' && (
-                <PatientsPage
-                  patients={patients}
-                  onSelectPatient={(pId) => setSelectedPatientId(pId)}
-                  onOpenAddPatientModal={() => {
-                    setEditingPatient(undefined);
-                    setShowAddPatientModal(true);
-                  }}
-                  onDeletePatient={handleDeletePatient}
-                />
-              )}
+            {/* TAB 3: CALENDAR */}
+            {activeTab === 'appointments' && (
+              <AppointmentsPage
+                appointments={appointments}
+                patients={patients}
+                doctors={doctors}
+                onAddAppointment={handleAddAppointment}
+                onUpdateStatus={handleUpdateAppointmentStatus}
+                onDeleteAppointment={handleDeleteAppointment}
+              />
+            )}
 
-              {/* TAB 4: SCHEDULE & CALENDAR */}
-              {activeTab === 'appointments' && (
-                <AppointmentsPage
-                  appointments={appointments}
-                  patients={patients}
-                  doctors={doctors}
-                  onAddAppointment={handleAddAppointment}
-                  onUpdateStatus={handleUpdateAppointmentStatus}
-                  onDeleteAppointment={handleDeleteAppointment}
-                />
-              )}
+            {/* TAB 4: OPERATIONS HUB */}
+            {activeTab === 'operations' && (
+              <OperationsHub
+                patients={patients}
+                appointments={appointments}
+                doctors={doctors}
+                labOrders={labOrders}
+                clinicSettings={clinicSettings}
+                clinicId={currentUser.clinicId}
+                onSelectPatient={(pId) => setSelectedPatientId(pId as string)}
+              />
+            )}
 
-              {/* TAB 5: DENTAL LABS CAD/CAM */}
-              {activeTab === 'labs' && (
-                <DentalLabsPage
-                  labOrders={labOrders}
-                  patients={patients}
-                  doctors={doctors}
-                  clinicSettings={clinicSettings}
-                  clinicId={currentUser.clinicId}
-                  onSelectPatient={(patient) => setSelectedPatientId(patient.id)}
-                />
-              )}
+            {/* TAB 8: FINANCIAL REPORTS */}
+            {activeTab === 'financials' && (
+              <FinancialReportsPage
+                payments={payments}
+                toothRecords={toothRecords}
+                doctors={doctors}
+                clinicSettings={clinicSettings}
+              />
+            )}
 
-              {/* TAB 6: WHATSAPP FOLLOW-UPS & REMINDERS */}
-              {activeTab === 'followups' && (
-                <FollowUpsPage
-                  appointments={appointments}
-                  patients={patients}
-                  clinicSettings={clinicSettings}
-                  onSelectPatient={(pId) => setSelectedPatientId(pId)}
-                />
-              )}
-
-              {/* TAB 7: SMART RECALL RADAR */}
-              {activeTab === 'smart-scheduler' && (
-                <SmartScheduler
-                  patients={patients}
-                  appointments={appointments}
-                  onBookForPatient={(pId) => setSelectedPatientId(pId)}
-                />
-              )}
-
-              {/* TAB 8: FINANCIAL REPORTS */}
-              {activeTab === 'financials' && (
-                <FinancialReportsPage
-                  payments={payments}
-                  toothRecords={toothRecords}
-                  doctors={doctors}
-                  clinicSettings={clinicSettings}
-                />
-              )}
-
-              {/* TAB 9: CLINIC SETTINGS & ASSISTANT STAFF */}
-              {activeTab === 'settings' && (
-                <SettingsPage
-                  settings={clinicSettings}
-                  onUpdateSettings={handleUpdateSettings}
-                  currentUser={currentUser}
-                  patients={patients}
-                  appointments={appointments}
-                  staffList={staffList}
-                  onAddAssistant={handleAddAssistant}
-                  onToggleAssistantStatus={handleToggleAssistantStatus}
-                  onDeleteAssistant={handleDeleteAssistant}
-                  lang={lang}
-                  onLanguageChange={(newLang) => setLang(newLang)}
-                />
-              )}
-            </>
-          )}
+            {/* TAB 9: CLINIC SETTINGS & ASSISTANT STAFF */}
+            {activeTab === 'settings' && (
+              <SettingsPage
+                settings={clinicSettings}
+                onUpdateSettings={handleUpdateSettings}
+                currentUser={currentUser}
+                patients={patients}
+                appointments={appointments}
+                staffList={staffList}
+                onAddAssistant={handleAddAssistant}
+                onToggleAssistantStatus={handleToggleAssistantStatus}
+                onDeleteAssistant={handleDeleteAssistant}
+                lang={lang}
+                onLanguageChange={(newLang) => setLang(newLang)}
+              />
+            )}
+          </>
         </main>
       </div>
+
+      {/* Slide-over Patient Drawer */}
+      {activePatient && (
+        <div className="fixed inset-0 z-[60] flex justify-end">
+          <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm transition-opacity" onClick={() => setSelectedPatientId(null)} />
+          <div className="relative w-full max-w-[95vw] lg:max-w-[1400px] h-full bg-slate-50 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300 rounded-l-3xl border-l border-slate-200">
+            <div className="p-4 sm:p-6 lg:p-8 min-h-full">
+              <PatientProfile
+                patient={activePatient}
+                toothRecords={toothRecords.filter((r) => r.patientId === activePatient.id)}
+                patientImages={patientImages.filter((i) => i.patientId === activePatient.id)}
+                payments={payments.filter((p) => p.patientId === activePatient.id)}
+                doctors={doctors}
+                clinicSettings={clinicSettings}
+                labOrders={labOrders}
+                onUpdatePatient={handleUpdatePatient}
+                onAddToothRecord={handleAddToothRecord}
+                onAddPatientImage={handleAddPatientImage}
+                onAddPayment={handleAddPayment}
+                onDeleteToothRecord={handleDeleteToothRecord}
+                onDeletePatientImage={handleDeletePatientImage}
+                onDeletePayment={handleDeletePayment}
+                onDeletePatient={handleDeletePatient}
+                onDeleteLabOrder={handleDeleteLabOrder}
+                onBack={() => setSelectedPatientId(null)}
+                onEditPatientModalOpen={() => {
+                  setEditingPatient(activePatient);
+                  setShowAddPatientModal(true);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Action Button (+ New Patient) */}
       <FloatingActionButton

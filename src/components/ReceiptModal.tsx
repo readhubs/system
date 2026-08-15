@@ -101,7 +101,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                     <tr key={idx} className="font-medium">
                       <td className="p-2.5 font-mono font-bold text-sky-700">Tooth #{p.toothNumber}</td>
                       <td className="p-2.5">{p.procedureName}</td>
-                      <td className="p-2.5 text-right font-mono font-bold">{p.cost.toLocaleString()} EGP</td>
+                      <td className="p-2.5 text-right font-mono font-bold">{(p.cost || 0).toLocaleString()} EGP</td>
                     </tr>
                   ))
                 ) : (

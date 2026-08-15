@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ImageType } from '../types';
-import { Sliders, Sun, Contrast, RotateCcw, ZoomIn, ZoomOut, Maximize2, Eye, FileImage } from 'lucide-react';
+import { Sliders, Sun, Contrast, RotateCcw, ZoomIn, ZoomOut, Maximize2, Eye, FileImage, Trash2 } from 'lucide-react';
 
 interface XrayViewerProps {
   imageUrl: string;
@@ -8,6 +8,7 @@ interface XrayViewerProps {
   toothNumber?: number;
   fileName?: string;
   date?: string;
+  onDelete?: () => void;
   onClose?: () => void;
 }
 
@@ -17,6 +18,7 @@ export const XrayViewer: React.FC<XrayViewerProps> = ({
   toothNumber,
   fileName,
   date,
+  onDelete,
   onClose
 }) => {
   const [brightness, setBrightness] = useState<number>(100);
@@ -31,6 +33,13 @@ export const XrayViewer: React.FC<XrayViewerProps> = ({
     setInvert(false);
     setSharpen(0);
     setZoom(100);
+  };
+
+  const handleDelete = () => {
+    if (onDelete && window.confirm('Are you sure you want to permanently delete this radiograph / image?')) {
+      onDelete();
+      if (onClose) onClose();
+    }
   };
 
   const filterStyle: React.CSSProperties = {
@@ -67,6 +76,16 @@ export const XrayViewer: React.FC<XrayViewerProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {onDelete && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-950/80 text-rose-300 border border-rose-800/50 hover:bg-rose-900 hover:text-white transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
+            </button>
+          )}
           <button
             type="button"
             onClick={resetFilters}

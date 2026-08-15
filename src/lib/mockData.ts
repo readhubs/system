@@ -361,3 +361,64 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     clinicId: 'clinic_cairo_1'
   }
 ];
+
+export const INITIAL_LAB_ORDERS = [
+  {
+    id: 'lab_1',
+    clinicId: 'clinic_cairo_1',
+    patientId: 'p_101',
+    patientName: 'Ahmed Mohamed El-Khatib',
+    labName: 'Master Ceramic Dental Lab',
+    doctorName: 'Dr. Mohamed Al-Sayed',
+    toothNumbers: [16],
+    restorationType: 'Zirconia Crown' as const,
+    shade: 'A2' as const,
+    dateSent: '2026-08-10',
+    expectedReturnDate: '2026-08-16',
+    status: 'In Progress' as const,
+    cost: 850,
+    notes: 'High translucent monolithic zirconia with subgingival margin preparation.',
+    attachmentUrls: [],
+    createdAt: '2026-08-10'
+  },
+  {
+    id: 'lab_2',
+    clinicId: 'clinic_cairo_1',
+    patientId: 'p_104',
+    patientName: 'Nour El-Din Sherif',
+    labName: 'Cairo Elite Esthetics Lab',
+    doctorName: 'Dr. Mohamed Al-Sayed',
+    toothNumbers: [11, 21],
+    restorationType: 'Veneer' as const,
+    shade: 'BL2' as const,
+    dateSent: '2026-08-08',
+    expectedReturnDate: '2026-08-14',
+    receivedDate: '2026-08-13',
+    status: 'Delivered' as const,
+    cost: 2200,
+    notes: 'Layered feldspathic veneers with subtle incisal translucency and light mamelons.',
+    attachmentUrls: [],
+    createdAt: '2026-08-08'
+  },
+  {
+    id: 'lab_3',
+    clinicId: 'clinic_cairo_1',
+    patientId: 'p_103',
+    patientName: 'Karim Mahmoud El-Gamal',
+    labName: 'Delta Cast Chrome Lab',
+    doctorName: 'Dr. Sarah Khalil',
+    toothNumbers: [35, 36, 37],
+    restorationType: 'Partial Acrylic / Chrome' as const,
+    shade: 'A3' as const,
+    dateSent: '2026-08-02',
+    expectedReturnDate: '2026-08-09',
+    receivedDate: '2026-08-09',
+    fittedDate: '2026-08-11',
+    status: 'Fitted' as const,
+    cost: 1600,
+    notes: 'Cast partial denture with Roach clasps. Try-in verified and fitted successfully.',
+    attachmentUrls: [],
+    createdAt: '2026-08-02'
+  }
+];
+

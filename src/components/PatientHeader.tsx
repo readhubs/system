@@ -1,13 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Patient } from '../types';
-import { User, AlertTriangle, Phone, Calendar, HeartPulse, ShieldAlert } from 'lucide-react';
+import { User, AlertTriangle, Phone, Calendar, HeartPulse, ShieldAlert, Trash2 } from 'lucide-react';
 
 interface PatientHeaderProps {
   patient: Patient;
   onEditPatient?: () => void;
+  onDeletePatient?: () => void;
 }
 
-export const PatientHeader: React.FC<PatientHeaderProps> = ({ patient, onEditPatient }) => {
+export const PatientHeader: React.FC<PatientHeaderProps> = ({
+  patient,
+  onEditPatient,
+  onDeletePatient
+}) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -36,8 +43,8 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({ patient, onEditPat
           </div>
         </div>
 
-        {/* Balance Stat & Quick Action */}
-        <div className="flex items-center gap-3 self-end sm:self-auto">
+        {/* Balance Stat & Quick Actions */}
+        <div className="flex items-center gap-2 self-end sm:self-auto">
           <div className="text-right px-4 py-2 bg-slate-50 border border-slate-200/60 rounded-xl">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient Balance</p>
             <p
@@ -58,8 +65,55 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({ patient, onEditPat
               Edit File
             </button>
           )}
+
+          {onDeletePatient && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
+              title="Delete Patient Record"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1">
+              <h3 className="font-extrabold text-slate-900 text-base">Delete Patient File?</h3>
+              <p className="text-xs text-slate-500">
+                Are you sure you want to permanently delete <strong>{patient.name}</strong> and all associated clinical history?
+              </p>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-extrabold text-xs hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  onDeletePatient();
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white font-extrabold text-xs hover:bg-rose-700 shadow-md shadow-rose-600/30"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* High-Priority Medical Alerts & Warnings */}
       {patient.medicalAlerts && patient.medicalAlerts.length > 0 ? (

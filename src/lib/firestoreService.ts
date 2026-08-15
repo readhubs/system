@@ -1,5 +1,6 @@
 import {
   collection,
+  collectionGroup,
   doc,
   getDoc,
   getDocs,
@@ -28,7 +29,9 @@ import {
   ClinicSettings,
   Clinic,
   ClinicStatus,
-  SubscriptionPlan
+  SubscriptionPlan,
+  DentalLabOrder,
+  LabOrderStatus
 } from '../types';
 
 // ==========================================
@@ -302,6 +305,14 @@ export async function saveToothRecordToFirestore(patientId: string, record: Toot
   }
 }
 
+export async function deleteToothRecordFromFirestore(patientId: string, recordId: string) {
+  try {
+    await deleteDoc(doc(db, 'patients', patientId, 'toothRecords', recordId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `patients/${patientId}/toothRecords/${recordId}`);
+  }
+}
+
 // ==========================================
 // 6. Patient Images & Radiographs
 // ==========================================
@@ -332,6 +343,14 @@ export async function savePatientImageToFirestore(patientId: string, image: Pati
   }
 }
 
+export async function deletePatientImageFromFirestore(patientId: string, imageId: string) {
+  try {
+    await deleteDoc(doc(db, 'patients', patientId, 'images', imageId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `patients/${patientId}/images/${imageId}`);
+  }
+}
+
 // ==========================================
 // 7. Patient Payments & Collections
 // ==========================================
@@ -359,6 +378,14 @@ export async function savePaymentToFirestore(patientId: string, payment: Payment
     }, { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `patients/${patientId}/payments/${payment.id}`);
+  }
+}
+
+export async function deletePaymentFromFirestore(patientId: string, paymentId: string) {
+  try {
+    await deleteDoc(doc(db, 'patients', patientId, 'payments', paymentId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `patients/${patientId}/payments/${paymentId}`);
   }
 }
 
@@ -444,7 +471,126 @@ export function subscribeClinicDoc(clinicId: string, onUpdate: (clinic: Clinic |
 }
 
 // ==========================================
-// 10. Data Export Helpers (CSV)
+// 10. Dental Labs Management
+// ==========================================
+
+export function subscribeLabOrders(clinicId: string, onUpdate: (orders: DentalLabOrder[]) => void) {
+  const q = query(
+    collection(db, 'labOrders'),
+    where('clinicId', '==', clinicId),
+    orderBy('createdAt', 'desc')
+  );
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: DentalLabOrder[] = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      })) as DentalLabOrder[];
+      onUpdate(list);
+    },
+    (err) => handleFirestoreError(err, OperationType.LIST, `labOrders?clinicId=${clinicId}`)
+  );
+}
+
+export async function saveLabOrderToFirestore(order: DentalLabOrder) {
+  try {
+    await setDoc(doc(db, 'labOrders', order.id), order, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `labOrders/${order.id}`);
+  }
+}
+
+export async function updateLabOrderStatusInFirestore(
+  orderId: string,
+  status: LabOrderStatus,
+  additionalDates?: { receivedDate?: string; fittedDate?: string }
+) {
+  try {
+    const updatePayload: any = { status };
+    if (additionalDates?.receivedDate) updatePayload.receivedDate = additionalDates.receivedDate;
+    if (additionalDates?.fittedDate) updatePayload.fittedDate = additionalDates.fittedDate;
+    await updateDoc(doc(db, 'labOrders', orderId), updatePayload);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, `labOrders/${orderId}`);
+  }
+}
+
+export async function deleteLabOrderFromFirestore(orderId: string) {
+  try {
+    await deleteDoc(doc(db, 'labOrders', orderId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `labOrders/${orderId}`);
+  }
+}
+
+// ==========================================
+// 11. Doctors & Staff Subscriptions
+// ==========================================
+
+export function subscribeDoctors(clinicId: string, onUpdate: (doctors: Doctor[]) => void) {
+  const q = query(collection(db, 'doctors'), where('clinicId', '==', clinicId));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: Doctor[] = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      })) as Doctor[];
+      if (list.length > 0) {
+        onUpdate(list);
+      }
+    },
+    (err) => handleFirestoreError(err, OperationType.LIST, `doctors?clinicId=${clinicId}`)
+  );
+}
+
+export function subscribeAllClinicPayments(clinicId: string, onUpdate: (payments: Payment[]) => void) {
+  try {
+    const q = query(collectionGroup(db, 'payments'), where('clinicId', '==', clinicId));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const list: Payment[] = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data()
+        })) as Payment[];
+        onUpdate(list);
+      },
+      (err) => {
+        console.warn('Payments collectionGroup note:', err);
+      }
+    );
+  } catch (err) {
+    console.warn('Fallback collectionGroup payments:', err);
+    return () => {};
+  }
+}
+
+export function subscribeAllClinicToothRecords(clinicId: string, onUpdate: (records: ToothRecord[]) => void) {
+  try {
+    const q = query(collectionGroup(db, 'toothRecords'), where('clinicId', '==', clinicId));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const list: ToothRecord[] = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data()
+        })) as ToothRecord[];
+        onUpdate(list);
+      },
+      (err) => {
+        console.warn('ToothRecords collectionGroup note:', err);
+      }
+    );
+  } catch (err) {
+    console.warn('Fallback collectionGroup toothRecords:', err);
+    return () => {};
+  }
+}
+
+// ==========================================
+// 12. Data Export Helpers (CSV)
 // ==========================================
 
 export function exportToCSV(filename: string, rows: Record<string, any>[]) {

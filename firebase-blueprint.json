@@ -118,10 +118,44 @@
         "date": { "type": "string" },
         "time": { "type": "string" },
         "procedure": { "type": "string" },
-        "status": { "type": "string", "enum": ["scheduled", "confirmed", "completed", "cancelled"] },
+        "status": { "type": "string", "enum": ["scheduled", "confirmed", "in-chair", "completed", "cancelled"] },
         "clinicId": { "type": "string" }
       },
       "required": ["patientId", "patientName", "date", "time", "clinicId"]
+    },
+    "DentalLabOrder": {
+      "title": "DentalLabOrder",
+      "description": "Dental prosthesis and CAD/CAM laboratory work order",
+      "type": "object",
+      "properties": {
+        "clinicId": { "type": "string" },
+        "patientId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "labName": { "type": "string" },
+        "doctorName": { "type": "string" },
+        "toothNumbers": { "type": "array" },
+        "restorationType": { "type": "string" },
+        "shade": { "type": "string" },
+        "status": { "type": "string", "enum": ["Draft", "Sent", "In Progress", "Delivered", "Fitted", "Cancelled"] },
+        "dateSent": { "type": "string" },
+        "expectedReturnDate": { "type": "string" },
+        "cost": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["clinicId", "patientId", "labName", "restorationType", "status"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Clinic settings and working hours configuration",
+      "type": "object",
+      "properties": {
+        "clinicId": { "type": "string" },
+        "name": { "type": "string" },
+        "doctorName": { "type": "string" },
+        "phone": { "type": "string" },
+        "currency": { "type": "string" }
+      },
+      "required": ["clinicId", "name"]
     }
   },
   "firestore": {
@@ -156,6 +190,14 @@
     "/appointments/{appointmentId}": {
       "schema": { "$ref": "#/entities/Appointment" },
       "description": "Appointment schedule"
+    },
+    "/labOrders/{orderId}": {
+      "schema": { "$ref": "#/entities/DentalLabOrder" },
+      "description": "Dental lab CAD/CAM work orders"
+    },
+    "/settings/{clinicId}": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "Clinic configuration and metadata"
     }
   }
 }

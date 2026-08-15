@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Appointment, Doctor, Patient } from '../types';
 import { generateAppointmentReminderWhatsAppLink } from '../lib/whatsapp';
-import { Calendar, Clock, MessageSquare, Plus, CheckCircle2, Phone, User, Filter, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, MessageSquare, Plus, CheckCircle2, Phone, User, Filter, AlertCircle, Trash2 } from 'lucide-react';
 
 interface AppointmentsPageProps {
   appointments: Appointment[];
@@ -9,6 +9,7 @@ interface AppointmentsPageProps {
   doctors: Doctor[];
   onAddAppointment: (appointment: Omit<Appointment, 'id'>) => void;
   onUpdateStatus: (appointmentId: string, newStatus: Appointment['status']) => void;
+  onDeleteAppointment?: (appointmentId: string) => void;
 }
 
 export const AppointmentsPage: React.FC<AppointmentsPageProps> = ({
@@ -16,7 +17,8 @@ export const AppointmentsPage: React.FC<AppointmentsPageProps> = ({
   patients,
   doctors,
   onAddAppointment,
-  onUpdateStatus
+  onUpdateStatus,
+  onDeleteAppointment
 }) => {
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -206,6 +208,21 @@ export const AppointmentsPage: React.FC<AppointmentsPageProps> = ({
                       className="px-3 py-2 bg-rose-50 text-rose-800 rounded-xl font-bold text-xs hover:bg-rose-100 border border-rose-200"
                     >
                       Cancel
+                    </button>
+                  )}
+
+                  {onDeleteAppointment && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`Delete appointment for ${app.patientName} at ${app.time}?`)) {
+                          onDeleteAppointment(app.id);
+                        }
+                      }}
+                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                      title="Delete Appointment"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   )}
                 </div>

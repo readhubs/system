@@ -448,9 +448,9 @@ export function AssistantDashboard({
                 <input
                   type="number"
                   required
-                  min="1"
-                  step="10"
-                  placeholder="500"
+                  min="0"
+                  step="any"
+                  placeholder="Enter any amount (e.g. 250, 1500, etc.)"
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
                   className="w-full mt-1.5 px-4 py-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-lg font-black text-emerald-400 focus:outline-none focus:border-emerald-500"

@@ -31,12 +31,12 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
 }) => {
   const [procedureName, setProcedureName] = useState(COMMON_DENTAL_PROCEDURES[0]);
   const [customProcedure, setCustomProcedure] = useState('');
-  const [cost, setCost] = useState<number>(2000);
+  const [cost, setCost] = useState<string>('');
   const [performingDoctorId, setPerformingDoctorId] = useState<string>(
     doctors.find((d) => d.type === 'in-house')?.id || ''
   );
   const [contributingDoctorId, setContributingDoctorId] = useState<string>('');
-  const [commissionPercent, setCommissionPercent] = useState<number>(0);
+  const [commissionPercent, setCommissionPercent] = useState<string>('0');
   const [status, setStatus] = useState<'completed' | 'planned'>('completed');
   const [notes, setNotes] = useState('');
   const [selectedSurfaces, setSelectedSurfaces] = useState<ToothSurface[]>(['O']);
@@ -53,11 +53,14 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
     setContributingDoctorId(docId);
     const doc = doctors.find((d) => d.id === docId);
     if (doc) {
-      setCommissionPercent(doc.defaultCommissionPercent || 0);
+      setCommissionPercent(String(doc.defaultCommissionPercent || 0));
     } else {
-      setCommissionPercent(0);
+      setCommissionPercent('0');
     }
   };
+
+  const numCost = parseFloat(cost) || 0;
+  const numCommission = parseFloat(commissionPercent) || 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,12 +74,12 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
       toothNumber,
       procedureName: finalProcedureName,
       date: new Date().toISOString().split('T')[0],
-      cost: Number(cost),
+      cost: numCost,
       performingDoctorId,
       performingDoctorName: performingDoc?.name,
       contributingDoctorId: contributingDoctorId || undefined,
       contributingDoctorName: contributingDoc?.name || undefined,
-      commissionPercent: contributingDoctorId ? Number(commissionPercent) : 0,
+      commissionPercent: contributingDoctorId ? numCommission : 0,
       status,
       notes: notes.trim(),
       surfaces: selectedSurfaces
@@ -177,9 +180,10 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
                 type="number"
                 required
                 min="0"
-                step="50"
+                step="any"
+                placeholder="e.g. 500 or any custom amount"
                 value={cost}
-                onChange={(e) => setCost(Number(e.target.value))}
+                onChange={(e) => setCost(e.target.value)}
                 className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none font-mono font-bold text-emerald-600 text-base"
               />
             </div>
@@ -260,10 +264,11 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
                   type="number"
                   min="0"
                   max="100"
+                  step="any"
                   placeholder="Comm. %"
                   disabled={!contributingDoctorId}
                   value={commissionPercent}
-                  onChange={(e) => setCommissionPercent(Number(e.target.value))}
+                  onChange={(e) => setCommissionPercent(e.target.value)}
                   className="w-full p-2.5 text-xs rounded-xl border border-amber-300 focus:border-amber-500 outline-none font-mono font-bold bg-white text-amber-900 disabled:opacity-50"
                 />
               </div>
@@ -273,7 +278,7 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
               <p className="text-[11px] font-semibold text-amber-800">
                 Commission Owed:{' '}
                 <span className="font-mono font-black text-amber-950">
-                  {((cost * commissionPercent) / 100).toFixed(0)} EGP
+                  {((numCost * numCommission) / 100).toFixed(0)} EGP
                 </span>
               </p>
             )}

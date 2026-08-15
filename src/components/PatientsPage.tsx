@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { Patient } from '../types';
 import { generateAppointmentReminderWhatsAppLink } from '../lib/whatsapp';
-import { Users, Search, Plus, Phone, AlertTriangle, MessageSquare, ChevronRight, UserCheck, DollarSign } from 'lucide-react';
+import { Users, Search, Plus, Phone, AlertTriangle, MessageSquare, ChevronRight, UserCheck, DollarSign, Trash2 } from 'lucide-react';
 
 interface PatientsPageProps {
   patients: Patient[];
   onSelectPatient: (patientId: string) => void;
   onOpenAddPatientModal: () => void;
+  onDeletePatient?: (patientId: string) => void;
 }
 
 export const PatientsPage: React.FC<PatientsPageProps> = ({
   patients,
   onSelectPatient,
-  onOpenAddPatientModal
+  onOpenAddPatientModal,
+  onDeletePatient
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'balance' | 'alerts' | 'unscheduled'>('all');
@@ -133,7 +135,24 @@ export const PatientsPage: React.FC<PatientsPageProps> = ({
                       </p>
                     </div>
 
-                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-sky-600 group-hover:translate-x-1 transition-all" />
+                    <div className="flex items-center gap-1">
+                      {onDeletePatient && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Delete patient file for "${patient.name}"? This cannot be undone.`)) {
+                              onDeletePatient(patient.id);
+                            }
+                          }}
+                          className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          title="Delete Patient"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-sky-600 group-hover:translate-x-1 transition-all" />
+                    </div>
                   </div>
 
                   {/* Medical Alerts Pill */}

@@ -116,5 +116,18 @@ service cloud.firestore {
       allow read: if isSuperAdmin() || isClinicMember(clinicId);
       allow write: if isSuperAdmin() || isDoctorInClinic(clinicId);
     }
+
+    // Dental Lab Orders (CAD/CAM Work Orders)
+    match /labOrders/{orderId} {
+      allow read: if isSuperAdmin() || (resource == null || isClinicMember(resource.data.clinicId));
+      allow create: if isSuperAdmin() || (isClinicMember(request.resource.data.clinicId) && hasPerm('editClinical'));
+      allow update: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('editClinical'));
+      allow delete: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('manageStaff'));
+    }
+
+    // Connection Health Check
+    match /test/{testId} {
+      allow read, write: if isSignedIn();
+    }
   }
 }

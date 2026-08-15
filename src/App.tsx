@@ -12,7 +12,8 @@ import {
   UserProfile,
   ClinicSettings,
   Clinic,
-  PermissionsMap
+  PermissionsMap,
+  DentalLabOrder
 } from './types';
 import {
   INITIAL_PATIENTS,
@@ -22,27 +23,39 @@ import {
   INITIAL_PATIENT_IMAGES,
   INITIAL_DOCTORS,
   INITIAL_STAFF,
-  INITIAL_CLINIC_SETTINGS
+  INITIAL_CLINIC_SETTINGS,
+  INITIAL_LAB_ORDERS
 } from './lib/mockData';
 
 import {
   subscribePatients,
   savePatientToFirestore,
+  deletePatientFromFirestore,
   subscribeAppointments,
   saveAppointmentToFirestore,
+  deleteAppointmentFromFirestore,
   subscribeToothRecords,
   saveToothRecordToFirestore,
+  deleteToothRecordFromFirestore,
   subscribePatientImages,
   savePatientImageToFirestore,
+  deletePatientImageFromFirestore,
   subscribePatientPayments,
   savePaymentToFirestore,
+  deletePaymentFromFirestore,
   subscribeClinicSettings,
   saveClinicSettingsToFirestore,
   subscribeStaffList,
   saveStaffUserToFirestore,
   deleteStaffUserFromFirestore,
   subscribeClinicDoc,
-  seedInitialClinicDataIfEmpty
+  seedInitialClinicDataIfEmpty,
+  subscribeLabOrders,
+  saveLabOrderToFirestore,
+  deleteLabOrderFromFirestore,
+  subscribeDoctors,
+  subscribeAllClinicPayments,
+  subscribeAllClinicToothRecords
 } from './lib/firestoreService';
 
 import {
@@ -55,9 +68,11 @@ import { AuthScreen } from './components/AuthScreen';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
+import { TodayClinicPage } from './components/TodayClinicPage';
 import { PatientsPage } from './components/PatientsPage';
 import { PatientProfile } from './components/PatientProfile';
 import { AppointmentsPage } from './components/AppointmentsPage';
+import { DentalLabsPage } from './components/DentalLabsPage';
 import { FollowUpsPage } from './components/FollowUpsPage';
 import { SmartScheduler } from './components/SmartScheduler';
 import { FinancialReportsPage } from './components/FinancialReportsPage';
@@ -67,6 +82,7 @@ import { PublicBookingModal } from './components/PublicBookingModal';
 import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { SuspendedClinicScreen } from './components/SuspendedClinicScreen';
 import { AssistantDashboard } from './components/AssistantDashboard';
+import { FloatingActionButton } from './components/FloatingActionButton';
 
 export default function App() {
   // Authentication State
@@ -83,9 +99,10 @@ export default function App() {
   const [payments, setPayments] = useState<Payment[]>(INITIAL_PAYMENTS);
   const [toothRecords, setToothRecords] = useState<ToothRecord[]>(INITIAL_TOOTH_RECORDS);
   const [patientImages, setPatientImages] = useState<PatientImage[]>(INITIAL_PATIENT_IMAGES);
-  const [doctors] = useState<Doctor[]>(INITIAL_DOCTORS);
+  const [doctors, setDoctors] = useState<Doctor[]>(INITIAL_DOCTORS);
   const [staffList, setStaffList] = useState<UserProfile[]>(INITIAL_STAFF);
   const [clinicSettings, setClinicSettings] = useState<ClinicSettings>(INITIAL_CLINIC_SETTINGS);
+  const [labOrders, setLabOrders] = useState<DentalLabOrder[]>(INITIAL_LAB_ORDERS);
 
   const [lang, setLang] = useState<'en' | 'ar'>('en');
 
@@ -217,6 +234,18 @@ export default function App() {
     const unsubAppointments = subscribeAppointments(cid, (data) => setAppointments(data));
     const unsubSettings = subscribeClinicSettings(cid, (data) => setClinicSettings(data));
     const unsubStaff = subscribeStaffList(cid, (data) => setStaffList(data));
+    const unsubLabs = subscribeLabOrders(cid, (data) => setLabOrders(data));
+    const unsubDoctors = subscribeDoctors(cid, (data) => setDoctors(data));
+    const unsubPayments = subscribeAllClinicPayments(cid, (data) => {
+      if (data && data.length > 0) {
+        setPayments(data);
+      }
+    });
+    const unsubToothRecords = subscribeAllClinicToothRecords(cid, (data) => {
+      if (data && data.length > 0) {
+        setToothRecords(data);
+      }
+    });
 
     return () => {
       unsubClinic();
@@ -224,6 +253,10 @@ export default function App() {
       unsubAppointments();
       unsubSettings();
       unsubStaff();
+      unsubLabs();
+      unsubDoctors();
+      unsubPayments();
+      unsubToothRecords();
     };
   }, [currentUser?.clinicId]);
 
@@ -335,6 +368,14 @@ export default function App() {
     await savePatientToFirestore(updated);
   };
 
+  const handleDeletePatient = async (patientId: string) => {
+    setPatients(patients.filter((p) => p.id !== patientId));
+    if (selectedPatientId === patientId) {
+      setSelectedPatientId(null);
+    }
+    await deletePatientFromFirestore(patientId);
+  };
+
   const handleAddToothRecord = async (recData: Omit<ToothRecord, 'id'>) => {
     if (!selectedPatientId || !currentUser?.clinicId) return;
     const newRecord: ToothRecord = {
@@ -344,6 +385,12 @@ export default function App() {
     };
     setToothRecords([newRecord, ...toothRecords]);
     await saveToothRecordToFirestore(selectedPatientId, newRecord, currentUser.clinicId);
+  };
+
+  const handleDeleteToothRecord = async (recordId: string, cost: number = 0) => {
+    if (!selectedPatientId || !currentUser?.clinicId) return;
+    setToothRecords(toothRecords.filter((r) => r.id !== recordId));
+    await deleteToothRecordFromFirestore(selectedPatientId, recordId);
   };
 
   const handleAddPatientImage = async (imgData: Omit<PatientImage, 'id'>) => {
@@ -357,6 +404,12 @@ export default function App() {
     await savePatientImageToFirestore(selectedPatientId, newImg, currentUser.clinicId);
   };
 
+  const handleDeletePatientImage = async (imageId: string) => {
+    if (!selectedPatientId || !currentUser?.clinicId) return;
+    setPatientImages(patientImages.filter((img) => img.id !== imageId));
+    await deletePatientImageFromFirestore(selectedPatientId, imageId);
+  };
+
   const handleAddPayment = async (payData: Omit<Payment, 'id'>) => {
     if (!selectedPatientId || !currentUser?.clinicId) return;
     const newPay: Payment = {
@@ -368,6 +421,18 @@ export default function App() {
     await savePaymentToFirestore(selectedPatientId, newPay, currentUser.clinicId);
   };
 
+  const handleDeletePayment = async (paymentId: string, amount: number) => {
+    if (!selectedPatientId || !currentUser?.clinicId) return;
+    setPayments(payments.filter((p) => p.id !== paymentId));
+    await deletePaymentFromFirestore(selectedPatientId, paymentId);
+    if (activePatient) {
+      const newBalance = (activePatient.balance || 0) + (amount || 0);
+      const updatedPatient = { ...activePatient, balance: newBalance };
+      setPatients(patients.map((p) => (p.id === activePatient.id ? updatedPatient : p)));
+      await savePatientToFirestore(updatedPatient);
+    }
+  };
+
   const handleAddAppointment = async (appData: Omit<Appointment, 'id'>) => {
     const cid = currentUser?.clinicId || 'clinic_cairo_1';
     const newApp: Appointment = {
@@ -377,6 +442,16 @@ export default function App() {
     };
     setAppointments([newApp, ...appointments]);
     await saveAppointmentToFirestore(newApp);
+  };
+
+  const handleDeleteAppointment = async (appointmentId: string) => {
+    setAppointments(appointments.filter((a) => a.id !== appointmentId));
+    await deleteAppointmentFromFirestore(appointmentId);
+  };
+
+  const handleDeleteLabOrder = async (orderId: string) => {
+    setLabOrders(labOrders.filter((o) => o.id !== orderId));
+    await deleteLabOrderFromFirestore(orderId);
   };
 
   const handleUpdateAppointmentStatus = async (id: string, newStatus: Appointment['status']) => {
@@ -542,6 +617,7 @@ export default function App() {
 
   const todayAppointmentsCount = appointments.filter((a) => a.date === todayStr).length;
   const tomorrowAppointmentsCount = appointments.filter((a) => a.date === tomorrowStr).length;
+  const activeLabOrdersCount = labOrders.filter((o) => o.status === 'Sent' || o.status === 'In Progress').length;
 
   const pendingFollowupsCount = patients.filter((p) => {
     const hasUntreated = Object.values(p.toothStatus || {}).some((s) => s === 'needs-treatment');
@@ -581,6 +657,7 @@ export default function App() {
           todayAppointmentsCount={todayAppointmentsCount}
           tomorrowAppointmentsCount={tomorrowAppointmentsCount}
           pendingFollowupsCount={pendingFollowupsCount}
+          activeLabOrdersCount={activeLabOrdersCount}
         />
 
         {/* Content Workspace Area */}
@@ -594,10 +671,16 @@ export default function App() {
               payments={payments.filter((p) => p.patientId === activePatient.id)}
               doctors={doctors}
               clinicSettings={clinicSettings}
+              labOrders={labOrders}
               onUpdatePatient={handleUpdatePatient}
               onAddToothRecord={handleAddToothRecord}
               onAddPatientImage={handleAddPatientImage}
               onAddPayment={handleAddPayment}
+              onDeleteToothRecord={handleDeleteToothRecord}
+              onDeletePatientImage={handleDeletePatientImage}
+              onDeletePayment={handleDeletePayment}
+              onDeletePatient={handleDeletePatient}
+              onDeleteLabOrder={handleDeleteLabOrder}
               onBack={() => setSelectedPatientId(null)}
               onEditPatientModalOpen={() => {
                 setEditingPatient(activePatient);
@@ -621,7 +704,22 @@ export default function App() {
                 />
               )}
 
-              {/* TAB 2: PATIENTS & ODONTOGRAM */}
+              {/* TAB 2: TODAY CLINIC QUEUE */}
+              {activeTab === 'today' && (
+                <TodayClinicPage
+                  appointments={appointments}
+                  patients={patients}
+                  doctors={doctors}
+                  clinicSettings={clinicSettings}
+                  onUpdateStatus={handleUpdateAppointmentStatus}
+                  onAddAppointment={handleAddAppointment}
+                  onAddPayment={handleAddPayment}
+                  onDeleteAppointment={handleDeleteAppointment}
+                  onSelectPatient={(patient) => setSelectedPatientId(patient.id)}
+                />
+              )}
+
+              {/* TAB 3: PATIENTS & ODONTOGRAM */}
               {activeTab === 'patients' && (
                 <PatientsPage
                   patients={patients}
@@ -630,10 +728,11 @@ export default function App() {
                     setEditingPatient(undefined);
                     setShowAddPatientModal(true);
                   }}
+                  onDeletePatient={handleDeletePatient}
                 />
               )}
 
-              {/* TAB 3: SCHEDULE & CALENDAR */}
+              {/* TAB 4: SCHEDULE & CALENDAR */}
               {activeTab === 'appointments' && (
                 <AppointmentsPage
                   appointments={appointments}
@@ -641,10 +740,23 @@ export default function App() {
                   doctors={doctors}
                   onAddAppointment={handleAddAppointment}
                   onUpdateStatus={handleUpdateAppointmentStatus}
+                  onDeleteAppointment={handleDeleteAppointment}
                 />
               )}
 
-              {/* TAB 4: WHATSAPP FOLLOW-UPS & REMINDERS */}
+              {/* TAB 5: DENTAL LABS CAD/CAM */}
+              {activeTab === 'labs' && (
+                <DentalLabsPage
+                  labOrders={labOrders}
+                  patients={patients}
+                  doctors={doctors}
+                  clinicSettings={clinicSettings}
+                  clinicId={currentUser.clinicId}
+                  onSelectPatient={(patient) => setSelectedPatientId(patient.id)}
+                />
+              )}
+
+              {/* TAB 6: WHATSAPP FOLLOW-UPS & REMINDERS */}
               {activeTab === 'followups' && (
                 <FollowUpsPage
                   appointments={appointments}
@@ -654,7 +766,7 @@ export default function App() {
                 />
               )}
 
-              {/* TAB 5: SMART RECALL RADAR */}
+              {/* TAB 7: SMART RECALL RADAR */}
               {activeTab === 'smart-scheduler' && (
                 <SmartScheduler
                   patients={patients}
@@ -663,7 +775,7 @@ export default function App() {
                 />
               )}
 
-              {/* TAB 6: FINANCIAL REPORTS */}
+              {/* TAB 8: FINANCIAL REPORTS */}
               {activeTab === 'financials' && (
                 <FinancialReportsPage
                   payments={payments}
@@ -673,7 +785,7 @@ export default function App() {
                 />
               )}
 
-              {/* TAB 7: CLINIC SETTINGS & ASSISTANT STAFF */}
+              {/* TAB 9: CLINIC SETTINGS & ASSISTANT STAFF */}
               {activeTab === 'settings' && (
                 <SettingsPage
                   settings={clinicSettings}
@@ -693,6 +805,14 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {/* Floating Action Button (+ New Patient) */}
+      <FloatingActionButton
+        onClick={() => {
+          setEditingPatient(undefined);
+          setShowAddPatientModal(true);
+        }}
+      />
 
       {/* Global Add/Edit Patient Modal */}
       {showAddPatientModal && (
@@ -724,21 +844,26 @@ export default function App() {
           settings={clinicSettings}
           doctors={doctors}
           onClose={() => setShowPublicBookingModal(false)}
-          onBookAppointment={(bookingData) => {
-            const patientObj = patients.find((p) => p.phone === bookingData.phone) || {
-              id: `p_online_${Date.now()}`,
-              name: bookingData.patientName,
-              phone: bookingData.phone,
-              gender: 'Male',
-              birthDate: '1990-01-01',
-              medicalAlerts: [],
-              medicalNotes: 'Online self-booked appointment',
-              balance: 0,
-              hasPendingTreatment: false,
-              toothStatus: {},
-              clinicId: currentUser.clinicId,
-              createdAt: new Date().toISOString().split('T')[0]
-            };
+          onBookAppointment={async (bookingData) => {
+            let patientObj = patients.find((p) => p.phone === bookingData.phone);
+            if (!patientObj) {
+              patientObj = {
+                id: `p_online_${Date.now()}`,
+                name: bookingData.patientName,
+                phone: bookingData.phone,
+                gender: 'Male',
+                birthDate: '1990-01-01',
+                medicalAlerts: [],
+                medicalNotes: 'Online self-booked appointment',
+                balance: 0,
+                hasPendingTreatment: false,
+                toothStatus: {},
+                clinicId: currentUser.clinicId,
+                createdAt: new Date().toISOString().split('T')[0]
+              };
+              setPatients((prev) => [patientObj!, ...prev]);
+              await savePatientToFirestore(patientObj);
+            }
 
             handleAddAppointment({
               patientId: patientObj.id,

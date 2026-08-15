@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { PaymentMethod, Payment } from '../types';
+import { PaymentMethod, Payment, Patient, ClinicSettings } from '../types';
 import { CreditCard, Camera, Check, DollarSign, FileCheck, ShieldCheck } from 'lucide-react';
 
 interface PaymentFormModalProps {
-  patientId: string;
-  patientName: string;
-  currentBalance: number;
+  patient?: Patient;
+  clinicSettings?: ClinicSettings;
+  patientId?: string;
+  patientName?: string;
+  currentBalance?: number;
   onSubmit: (paymentData: Omit<Payment, 'id'>) => void;
   onClose: () => void;
 }
@@ -13,13 +15,21 @@ interface PaymentFormModalProps {
 const PAYMENT_METHODS: PaymentMethod[] = ['Cash', 'InstaPay', 'Visa', 'Bank', 'Other'];
 
 export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
-  patientId,
-  patientName,
-  currentBalance,
+  patient,
+  clinicSettings,
+  patientId: propPatientId,
+  patientName: propPatientName,
+  currentBalance: propCurrentBalance,
   onSubmit,
   onClose
 }) => {
-  const [amount, setAmount] = useState<number>(currentBalance > 0 ? currentBalance : 1000);
+  const finalPatientId = patient?.id || propPatientId || '';
+  const finalPatientName = patient?.name || propPatientName || '';
+  const finalCurrentBalance = patient ? patient.balance : (propCurrentBalance ?? 0);
+
+  const [amount, setAmount] = useState<string>(
+    finalCurrentBalance > 0 ? String(finalCurrentBalance) : ''
+  );
   const [method, setMethod] = useState<PaymentMethod>('Cash');
   const [notes, setNotes] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -33,21 +43,26 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
     }
   };
 
-  const remainingAfterPayment = Math.max(0, currentBalance - Number(amount));
+  const parsedAmount = parseFloat(amount) || 0;
+  const remainingAfterPayment = Math.max(0, finalCurrentBalance - parsedAmount);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || amount <= 0) return;
+    if (parsedAmount <= 0) {
+      alert('Please enter a valid payment amount greater than 0.');
+      return;
+    }
 
     onSubmit({
-      patientId,
-      patientName,
-      amount: Number(amount),
+      patientId: finalPatientId,
+      patientName: finalPatientName,
+      amount: parsedAmount,
       date: new Date().toISOString(),
       method,
       proofUrl: proofPreviewUrl || (method === 'InstaPay' ? 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=600&q=80' : undefined),
       notes: notes.trim(),
-      remainingBalanceSnapshot: remainingAfterPayment
+      remainingBalanceSnapshot: remainingAfterPayment,
+      clinicId: patient?.clinicId || clinicSettings?.clinicId || 'clinic_1'
     });
   };
 
@@ -61,7 +76,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-extrabold text-slate-900">Record Payment</h2>
-              <p className="text-xs text-slate-500">{patientName}</p>
+              <p className="text-xs text-slate-500">{finalPatientName}</p>
             </div>
           </div>
           <button
@@ -80,25 +95,39 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               <label className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1">
                 <DollarSign className="w-4 h-4 text-emerald-600" /> Amount Collected (EGP) *
               </label>
-              <button
-                type="button"
-                onClick={() => setAmount(currentBalance)}
-                className="text-[11px] font-bold text-emerald-700 hover:underline"
-              >
-                Pay Full ({currentBalance} EGP)
-              </button>
+              <div className="flex items-center gap-2">
+                {finalCurrentBalance > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAmount(String(finalCurrentBalance))}
+                    className="text-[11px] font-bold text-emerald-700 hover:underline"
+                  >
+                    Full Balance ({finalCurrentBalance} EGP)
+                  </button>
+                )}
+                {amount && (
+                  <button
+                    type="button"
+                    onClick={() => setAmount('')}
+                    className="text-[11px] font-bold text-slate-400 hover:text-slate-600 hover:underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
             <input
               type="number"
               required
-              min="1"
-              step="50"
+              min="0"
+              step="any"
+              placeholder="e.g. 500 or any custom amount"
               value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
+              onChange={(e) => setAmount(e.target.value)}
               className="w-full text-2xl font-black font-mono text-emerald-700 bg-white p-3 rounded-xl border border-emerald-300 focus:border-emerald-500 outline-none shadow-2xs"
             />
             <div className="flex justify-between text-xs font-bold text-slate-500 pt-1">
-              <span>Outstanding Before: {currentBalance} EGP</span>
+              <span>Outstanding Before: {finalCurrentBalance} EGP</span>
               <span className={remainingAfterPayment === 0 ? 'text-emerald-700 font-extrabold' : 'text-amber-600'}>
                 Remaining After: {remainingAfterPayment} EGP
               </span>

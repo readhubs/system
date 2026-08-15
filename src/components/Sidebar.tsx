@@ -4,13 +4,14 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
-  MessageSquare,
+  Layers,
   Sparkles,
   DollarSign,
-  ShieldCheck,
   Settings,
   MapPin,
-  Send
+  Send,
+  Clock,
+  Activity
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -21,6 +22,7 @@ interface SidebarProps {
   todayAppointmentsCount?: number;
   pendingFollowupsCount?: number;
   tomorrowAppointmentsCount?: number;
+  activeLabOrdersCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -30,7 +32,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   clinicSettings,
   todayAppointmentsCount = 0,
   pendingFollowupsCount = 0,
-  tomorrowAppointmentsCount = 0
+  tomorrowAppointmentsCount = 0,
+  activeLabOrdersCount = 0
 }) => {
   const navItems = [
     {
@@ -38,6 +41,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Dashboard',
       icon: LayoutDashboard,
       visible: true
+    },
+    {
+      id: 'today',
+      label: "Today's Clinic Queue",
+      icon: Clock,
+      badge: todayAppointmentsCount > 0 ? todayAppointmentsCount : undefined,
+      badgeColor: 'bg-emerald-600 text-white animate-pulse',
+      visible: permissions.manageAppointments
     },
     {
       id: 'patients',
@@ -49,8 +60,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'appointments',
       label: 'Schedule & Calendar',
       icon: Calendar,
-      badge: todayAppointmentsCount > 0 ? todayAppointmentsCount : undefined,
       visible: permissions.manageAppointments
+    },
+    {
+      id: 'labs',
+      label: 'Dental Labs & CAD/CAM',
+      icon: Layers,
+      badge: activeLabOrdersCount > 0 ? activeLabOrdersCount : undefined,
+      badgeColor: 'bg-purple-600 text-white',
+      visible: permissions.editClinical !== false
     },
     {
       id: 'followups',

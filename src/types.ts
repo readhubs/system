@@ -62,6 +62,66 @@ export type ToothStatus = 'healthy' | 'treated' | 'needs-treatment' | 'extracted
 
 export type ToothSurface = 'O' | 'M' | 'D' | 'B' | 'L'; // Occlusal, Mesial, Distal, Buccal, Lingual
 
+export type LabOrderStatus = 'Sent' | 'In Progress' | 'Delivered' | 'Fitted' | 'Cancelled';
+
+export type DentalShade =
+  | 'A1'
+  | 'A2'
+  | 'A3'
+  | 'A3.5'
+  | 'A4'
+  | 'B1'
+  | 'B2'
+  | 'B3'
+  | 'B4'
+  | 'C1'
+  | 'C2'
+  | 'C3'
+  | 'C4'
+  | 'D2'
+  | 'D3'
+  | 'D4'
+  | 'BL1'
+  | 'BL2'
+  | 'BL3'
+  | 'BL4'
+  | 'Custom';
+
+export type RestorationType =
+  | 'Zirconia Crown'
+  | 'E-Max / Lithium Disilicate'
+  | 'PFM (Porcelain Fused to Metal)'
+  | 'Veneer'
+  | 'Inlay / Onlay'
+  | 'Custom Implant Abutment'
+  | 'Bridge'
+  | 'Full Denture'
+  | 'Partial Acrylic / Chrome'
+  | 'Night Guard / Splint'
+  | 'Bleaching Tray'
+  | 'Other';
+
+export interface DentalLabOrder {
+  id: string;
+  clinicId: string;
+  patientId: string;
+  patientName: string;
+  labName: string;
+  doctorName?: string;
+  toothNumbers: number[];
+  restorationType: RestorationType;
+  shade: DentalShade | string;
+  dateSent: string;
+  expectedReturnDate: string;
+  receivedDate?: string;
+  fittedDate?: string;
+  status: LabOrderStatus;
+  cost: number;
+  notes?: string;
+  attachmentUrls?: string[];
+  createdAt: string;
+}
+
 export interface Patient {
   id: string;
   name: string;
@@ -128,7 +188,7 @@ export interface Payment {
   recordedBy?: string;
 }
 
-export type AppointmentStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
+export type AppointmentStatus = 'scheduled' | 'confirmed' | 'in-chair' | 'completed' | 'cancelled';
 
 export interface Appointment {
   id: string;

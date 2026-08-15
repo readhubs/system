@@ -8,6 +8,10 @@ import {
 import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import {
+  findClinicByOwnerEmail,
+  saveUserProfileToFirestore
+} from '../lib/firestoreService';
+import {
   Stethoscope,
   Lock,
   Mail,
@@ -55,15 +59,22 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
         const userCred = await createUserWithEmailAndPassword(auth, email.trim(), password);
         const uid = userCred.user.uid;
-        const generatedClinicId = `clinic_${Date.now()}`;
+        
+        // 1. Check if Super Admin pre-provisioned a clinic for this email
+        const existingPreProvisionedClinic = await findClinicByOwnerEmail(email.trim());
+        const determinedClinicId = existingPreProvisionedClinic?.id || `clinic_${uid}`;
+
+        const isSuperAdminEmail =
+          email.trim().toLowerCase() === 'replitoo55@gmail.com' ||
+          email.trim().toLowerCase() === '203256@eru.edu.eg';
 
         const doctorProfile: UserProfile = {
           uid,
           name: doctorName.trim().startsWith('Dr.') ? doctorName.trim() : `Dr. ${doctorName.trim()}`,
           email: email.trim(),
-          role: 'doctor',
+          role: isSuperAdminEmail ? 'super_admin' : 'doctor',
           specialty: specialty.trim(),
-          clinicId: generatedClinicId,
+          clinicId: isSuperAdminEmail ? 'system' : determinedClinicId,
           permissions: {
             viewPatients: true,
             editClinical: true,
@@ -80,35 +91,42 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         };
 
         const initialSettings: ClinicSettings = {
-          clinicId: generatedClinicId,
-          name: clinicName.trim(),
+          clinicId: determinedClinicId,
+          name: existingPreProvisionedClinic?.name || clinicName.trim(),
           address: 'Cairo / Giza, Egypt',
-          phone: '01012345678',
+          phone: existingPreProvisionedClinic?.phone || '01012345678',
           languageDefault: 'en',
           multiBranchEnabled: false,
           onlineBookingEnabled: false,
           branches: [
-            { id: `b_main_${Date.now()}`, name: `${clinicName.trim()} - Main Branch`, address: 'Main Branch' }
+            { id: `b_main_${uid}`, name: `${clinicName.trim()} - Main Branch`, address: 'Main Branch' }
           ]
         };
 
+        // Persist User Profile & Clinic to Firestore immediately
         try {
           const batch = writeBatch(db);
-          batch.set(doc(db, 'users', uid), doctorProfile);
-          batch.set(doc(db, 'clinics', generatedClinicId), {
-            clinicId: generatedClinicId,
-            name: clinicName.trim(),
-            ownerUid: uid,
-            createdAt: new Date().toISOString()
-          });
-          batch.set(doc(db, 'settings', generatedClinicId), initialSettings);
+          batch.set(doc(db, 'users', uid), doctorProfile, { merge: true });
+          if (!existingPreProvisionedClinic && !isSuperAdminEmail) {
+            batch.set(doc(db, 'clinics', determinedClinicId), {
+              clinicId: determinedClinicId,
+              id: determinedClinicId,
+              name: clinicName.trim(),
+              ownerUid: uid,
+              ownerEmail: email.trim().toLowerCase(),
+              doctorName: doctorProfile.name,
+              status: 'active',
+              plan: 'free_trial',
+              createdAt: new Date().toISOString()
+            }, { merge: true });
+            batch.set(doc(db, 'settings', determinedClinicId), initialSettings, { merge: true });
+          }
           await batch.commit();
         } catch (dbErr) {
           console.warn('Firestore initial profile sync note:', dbErr);
         }
 
-        localStorage.setItem(`clinicpro_user_${uid}`, JSON.stringify(doctorProfile));
-        localStorage.setItem('clinicpro_active_session', JSON.stringify(doctorProfile));
+        await saveUserProfileToFirestore(doctorProfile);
         onAuthenticated(doctorProfile);
       } else {
         const userCred = await signInWithEmailAndPassword(auth, email.trim(), password);
@@ -123,6 +141,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
           }
         } catch (fetchErr) {
           console.warn('Could not read user profile from cloud Firestore directly:', fetchErr);
+        }
+
+        if (!profileData) {
           const cached = localStorage.getItem(`clinicpro_user_${uid}`);
           if (cached) {
             try {
@@ -133,17 +154,22 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
           }
         }
 
-        if (profileData) {
-          localStorage.setItem(`clinicpro_user_${uid}`, JSON.stringify(profileData));
-          localStorage.setItem('clinicpro_active_session', JSON.stringify(profileData));
-          onAuthenticated(profileData);
-        } else {
-          const fallbackProfile: UserProfile = {
+        if (!profileData) {
+          // Check for pre-provisioned clinic
+          const existingPreProvisionedClinic = await findClinicByOwnerEmail(email.trim());
+          const isSuperAdminEmail =
+            email.trim().toLowerCase() === 'replitoo55@gmail.com' ||
+            email.trim().toLowerCase() === '203256@eru.edu.eg';
+          const determinedClinicId = isSuperAdminEmail
+            ? 'system'
+            : (existingPreProvisionedClinic?.id || `clinic_${uid}`);
+
+          profileData = {
             uid,
             name: userCred.user.displayName || email.split('@')[0] || 'Doctor',
             email: email.trim(),
-            role: 'doctor',
-            clinicId: `clinic_${uid.slice(0, 8)}`,
+            role: isSuperAdminEmail ? 'super_admin' : 'doctor',
+            clinicId: determinedClinicId,
             permissions: {
               viewPatients: true,
               editClinical: true,
@@ -158,10 +184,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
               sendWhatsApp: true
             }
           };
-          localStorage.setItem(`clinicpro_user_${uid}`, JSON.stringify(fallbackProfile));
-          localStorage.setItem('clinicpro_active_session', JSON.stringify(fallbackProfile));
-          onAuthenticated(fallbackProfile);
         }
+
+        // CRITICAL: Write /users/{uid} to Firestore so security rules and refresh never fail
+        await saveUserProfileToFirestore(profileData);
+        onAuthenticated(profileData);
       }
     } catch (err: any) {
       console.error('Auth error:', err);
@@ -189,6 +216,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       const uid = user.uid;
+      const userEmail = user.email || '';
 
       // Check if user already exists in Firestore
       let profileData: UserProfile | null = null;
@@ -203,16 +231,49 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
       }
 
       if (profileData && profileData.clinicId) {
-        localStorage.setItem(`clinicpro_user_${uid}`, JSON.stringify(profileData));
-        localStorage.setItem('clinicpro_active_session', JSON.stringify(profileData));
+        await saveUserProfileToFirestore(profileData);
         onAuthenticated(profileData);
-      } else {
-        // First-time Google user without clinic: trigger onboarding modal
-        setGoogleUserTemp(user);
-        setGoogleDoctorName(user.displayName || 'Dr. Doctor');
-        setGoogleClinicName(`${user.displayName ? user.displayName.split(' ')[0] : 'Cairo'} Dental Clinic`);
-        setShowGoogleOnboardModal(true);
+        return;
       }
+
+      // Check if Super Admin pre-provisioned a clinic for this Google email
+      const existingPreProvisionedClinic = await findClinicByOwnerEmail(userEmail);
+      const isSuperAdminEmail =
+        userEmail.toLowerCase() === 'replitoo55@gmail.com' ||
+        userEmail.toLowerCase() === '203256@eru.edu.eg';
+
+      if (existingPreProvisionedClinic || isSuperAdminEmail) {
+        const autoProfile: UserProfile = {
+          uid,
+          name: user.displayName || existingPreProvisionedClinic?.doctorName || 'Dr. Doctor',
+          email: userEmail,
+          role: isSuperAdminEmail ? 'super_admin' : 'doctor',
+          clinicId: isSuperAdminEmail ? 'system' : existingPreProvisionedClinic!.id,
+          permissions: {
+            viewPatients: true,
+            editClinical: true,
+            editToothChart: true,
+            uploadViewImages: true,
+            manageAppointments: true,
+            viewFinancials: true,
+            viewPaymentAmounts: true,
+            recordPayments: true,
+            manageStaff: true,
+            accessSettings: true,
+            sendWhatsApp: true
+          }
+        };
+
+        await saveUserProfileToFirestore(autoProfile);
+        onAuthenticated(autoProfile);
+        return;
+      }
+
+      // First-time Google user without existing clinic: trigger onboarding modal
+      setGoogleUserTemp(user);
+      setGoogleDoctorName(user.displayName || 'Dr. Doctor');
+      setGoogleClinicName(`${user.displayName ? user.displayName.split(' ')[0] : 'Cairo'} Dental Clinic`);
+      setShowGoogleOnboardModal(true);
     } catch (err: any) {
       console.error('Google Auth error:', err);
       setError(err.message || 'Google Sign-in failed. Please try again or use Email login.');
@@ -228,7 +289,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
     try {
       const uid = googleUserTemp.uid;
-      const generatedClinicId = `clinic_${Date.now()}`;
+      const generatedClinicId = `clinic_${uid}`;
 
       const doctorProfile: UserProfile = {
         uid,
@@ -261,27 +322,31 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         multiBranchEnabled: false,
         onlineBookingEnabled: false,
         branches: [
-          { id: `b_main_${Date.now()}`, name: `${googleClinicName.trim()} - Main Branch`, address: 'Main Branch' }
+          { id: `b_main_${uid}`, name: `${googleClinicName.trim()} - Main Branch`, address: 'Main Branch' }
         ]
       };
 
       try {
         const batch = writeBatch(db);
-        batch.set(doc(db, 'users', uid), doctorProfile);
+        batch.set(doc(db, 'users', uid), doctorProfile, { merge: true });
         batch.set(doc(db, 'clinics', generatedClinicId), {
           clinicId: generatedClinicId,
+          id: generatedClinicId,
           name: googleClinicName.trim(),
           ownerUid: uid,
+          ownerEmail: (googleUserTemp.email || '').toLowerCase(),
+          doctorName: doctorProfile.name,
+          status: 'active',
+          plan: 'free_trial',
           createdAt: new Date().toISOString()
-        });
-        batch.set(doc(db, 'settings', generatedClinicId), initialSettings);
+        }, { merge: true });
+        batch.set(doc(db, 'settings', generatedClinicId), initialSettings, { merge: true });
         await batch.commit();
       } catch (dbErr) {
         console.warn('Firestore initial Google setup sync:', dbErr);
       }
 
-      localStorage.setItem(`clinicpro_user_${uid}`, JSON.stringify(doctorProfile));
-      localStorage.setItem('clinicpro_active_session', JSON.stringify(doctorProfile));
+      await saveUserProfileToFirestore(doctorProfile);
       setShowGoogleOnboardModal(false);
       onAuthenticated(doctorProfile);
     } catch (err: any) {

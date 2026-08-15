@@ -57,6 +57,54 @@ export function saveCachedSuperAdminClinics(clinics: Clinic[]): void {
   }
 }
 
+export async function findClinicByOwnerEmail(email: string): Promise<Clinic | null> {
+  if (!email) return null;
+  const cleanEmail = email.trim().toLowerCase();
+
+  // 1. Check local cache first
+  const cached = getCachedSuperAdminClinics();
+  const foundCached = cached.find(
+    (c) =>
+      (c.ownerEmail && c.ownerEmail.trim().toLowerCase() === cleanEmail) ||
+      (c.email && c.email.trim().toLowerCase() === cleanEmail)
+  );
+  if (foundCached) return foundCached;
+
+  // 2. Query Firestore
+  try {
+    const q1 = query(collection(db, 'clinics'), where('ownerEmail', '==', cleanEmail));
+    const snap1 = await getDocs(q1);
+    if (!snap1.empty) {
+      const docSnap = snap1.docs[0];
+      return { id: docSnap.id, ...docSnap.data() } as Clinic;
+    }
+
+    const q2 = query(collection(db, 'clinics'), where('email', '==', cleanEmail));
+    const snap2 = await getDocs(q2);
+    if (!snap2.empty) {
+      const docSnap = snap2.docs[0];
+      return { id: docSnap.id, ...docSnap.data() } as Clinic;
+    }
+  } catch (e) {
+    console.warn('findClinicByOwnerEmail query note:', e);
+  }
+
+  return null;
+}
+
+export async function saveUserProfileToFirestore(profile: UserProfile): Promise<void> {
+  try {
+    // 1. Save to localStorage immediately
+    localStorage.setItem(`clinicpro_user_${profile.uid}`, JSON.stringify(profile));
+    localStorage.setItem('clinicpro_active_session', JSON.stringify(profile));
+
+    // 2. Persist to Firestore /users/{uid}
+    await setDoc(doc(db, 'users', profile.uid), profile, { merge: true });
+  } catch (err: any) {
+    console.warn('saveUserProfileToFirestore note:', err?.message || err);
+  }
+}
+
 export function subscribeAllClinics(
   onUpdate: (clinics: Clinic[]) => void,
   onError?: (err: any) => void
@@ -289,11 +337,34 @@ export async function ensureClinicInitialized(
 // 3. Patients (Multi-Tenant & Paginated Reads)
 // ==========================================
 
+export function getCachedPatients(clinicId: string): Patient[] {
+  try {
+    const raw = localStorage.getItem(`clinicpro_patients_${clinicId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export function saveCachedPatients(clinicId: string, patients: Patient[]): void {
+  try {
+    localStorage.setItem(`clinicpro_patients_${clinicId}`, JSON.stringify(patients));
+  } catch (e) {
+    console.warn('Failed to cache patients locally:', e);
+  }
+}
+
 export function subscribePatients(
   clinicId: string,
   onUpdate: (patients: Patient[]) => void,
   pageSize: number = 100
 ) {
+  // 1. Emit cached patients immediately for instant rendering without flash
+  const cached = getCachedPatients(clinicId);
+  if (cached && cached.length > 0) {
+    onUpdate(cached);
+  }
+
   const q = query(
     collection(db, 'patients'),
     where('clinicId', '==', clinicId),
@@ -307,21 +378,44 @@ export function subscribePatients(
         id: docSnap.id,
         ...docSnap.data()
       })) as Patient[];
+
+      // Update local storage cache
+      saveCachedPatients(clinicId, list);
       onUpdate(list);
     },
-    (err) => handleFirestoreError(err, OperationType.LIST, `patients?clinicId=${clinicId}`)
+    (err) => {
+      console.warn('subscribePatients error, retaining cached patients:', err?.message || err);
+      const fallbackCached = getCachedPatients(clinicId);
+      if (fallbackCached && fallbackCached.length > 0) {
+        onUpdate(fallbackCached);
+      }
+      handleFirestoreError(err, OperationType.LIST, `patients?clinicId=${clinicId}`);
+    }
   );
 }
 
 export async function savePatientToFirestore(patient: Patient) {
+  if (patient.clinicId) {
+    const current = getCachedPatients(patient.clinicId);
+    const updated = [patient, ...current.filter((p) => p.id !== patient.id)];
+    saveCachedPatients(patient.clinicId, updated);
+  }
+
   try {
     await setDoc(doc(db, 'patients', patient.id), patient, { merge: true });
   } catch (err) {
+    console.warn('savePatientToFirestore note:', err);
     handleFirestoreError(err, OperationType.WRITE, `patients/${patient.id}`);
+    throw err;
   }
 }
 
-export async function deletePatientFromFirestore(patientId: string) {
+export async function deletePatientFromFirestore(patientId: string, clinicId?: string) {
+  if (clinicId) {
+    const current = getCachedPatients(clinicId);
+    saveCachedPatients(clinicId, current.filter((p) => p.id !== patientId));
+  }
+
   try {
     await deleteDoc(doc(db, 'patients', patientId));
   } catch (err) {

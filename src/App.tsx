@@ -45,7 +45,9 @@ import {
   deleteLabOrderFromFirestore,
   subscribeDoctors,
   subscribeAllClinicPayments,
-  subscribeAllClinicToothRecords
+  subscribeAllClinicToothRecords,
+  findClinicByOwnerEmail,
+  saveUserProfileToFirestore
 } from './lib/firestoreService';
 
 import {
@@ -170,15 +172,22 @@ export default function App() {
         }
 
         if (!profile) {
+          const userEmail = fbUser.email || '';
           const isSuperAdminEmail =
-            fbUser.email === 'replitoo55@gmail.com' ||
-            fbUser.email === '203256@eru.edu.eg';
+            userEmail.toLowerCase() === 'replitoo55@gmail.com' ||
+            userEmail.toLowerCase() === '203256@eru.edu.eg';
+
+          const existingPreProvisionedClinic = await findClinicByOwnerEmail(userEmail);
+          const determinedClinicId = isSuperAdminEmail
+            ? 'system'
+            : (existingPreProvisionedClinic?.id || `clinic_${fbUser.uid}`);
+
           profile = {
             uid: fbUser.uid,
-            name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Doctor',
-            email: fbUser.email || '',
+            name: fbUser.displayName || userEmail.split('@')[0] || 'Doctor',
+            email: userEmail,
             role: isSuperAdminEmail ? 'super_admin' : 'doctor',
-            clinicId: isSuperAdminEmail ? 'system' : `clinic_${fbUser.uid.slice(0, 8)}`,
+            clinicId: determinedClinicId,
             permissions: {
               viewPatients: true,
               editClinical: true,
@@ -195,8 +204,8 @@ export default function App() {
           };
         }
 
-        localStorage.setItem(`clinicpro_user_${fbUser.uid}`, JSON.stringify(profile));
-        localStorage.setItem('clinicpro_active_session', JSON.stringify(profile));
+        // CRITICAL FIX: Ensure user doc exists in Firestore so security rules and refresh never fail
+        await saveUserProfileToFirestore(profile);
         setCurrentUser(profile);
       } else {
         const currentSession = localStorage.getItem('clinicpro_active_session');
@@ -358,10 +367,15 @@ export default function App() {
       if ((newPatient as any)[key] === undefined) delete (newPatient as any)[key];
     });
 
-    setPatients([newPatient, ...patients]);
-    await savePatientToFirestore(newPatient);
-    setShowAddPatientModal(false);
-    setSelectedPatientId(newPatient.id);
+    try {
+      setPatients(prev => [newPatient, ...prev.filter(p => p.id !== newPatient.id)]);
+      setSelectedPatientId(newPatient.id);
+      await savePatientToFirestore(newPatient);
+    } catch (err) {
+      console.warn('handleAddPatient Firestore error:', err);
+    } finally {
+      setShowAddPatientModal(false);
+    }
   };
 
   const handleUpdatePatient = async (updated: Patient) => {
@@ -370,16 +384,25 @@ export default function App() {
       if ((updated as any)[key] === undefined) delete (updated as any)[key];
     });
 
-    setPatients(patients.map((p) => (p.id === updated.id ? updated : p)));
-    await savePatientToFirestore(updated);
+    try {
+      setPatients(prev => prev.map((p) => (p.id === updated.id ? updated : p)));
+      await savePatientToFirestore(updated);
+    } catch (err) {
+      console.warn('handleUpdatePatient Firestore error:', err);
+    }
   };
 
   const handleDeletePatient = async (patientId: string) => {
-    setPatients(patients.filter((p) => p.id !== patientId));
-    if (selectedPatientId === patientId) {
-      setSelectedPatientId(null);
+    const cid = currentUser?.clinicId;
+    try {
+      setPatients(prev => prev.filter((p) => p.id !== patientId));
+      if (selectedPatientId === patientId) {
+        setSelectedPatientId(null);
+      }
+      await deletePatientFromFirestore(patientId, cid);
+    } catch (err) {
+      console.warn('handleDeletePatient Firestore error:', err);
     }
-    await deletePatientFromFirestore(patientId);
   };
 
   const handleAddToothRecord = async (recData: Omit<ToothRecord, 'id'>) => {
@@ -394,14 +417,22 @@ export default function App() {
       if ((newRecord as any)[key] === undefined) delete (newRecord as any)[key];
     });
 
-    setToothRecords([newRecord, ...toothRecords]);
-    await saveToothRecordToFirestore(selectedPatientId, newRecord, currentUser.clinicId);
+    try {
+      setToothRecords(prev => [newRecord, ...prev]);
+      await saveToothRecordToFirestore(selectedPatientId, newRecord, currentUser.clinicId);
+    } catch (err) {
+      console.warn('handleAddToothRecord error:', err);
+    }
   };
 
   const handleDeleteToothRecord = async (recordId: string, cost: number = 0) => {
     if (!selectedPatientId || !currentUser?.clinicId) return;
-    setToothRecords(toothRecords.filter((r) => r.id !== recordId));
-    await deleteToothRecordFromFirestore(selectedPatientId, recordId);
+    try {
+      setToothRecords(prev => prev.filter((r) => r.id !== recordId));
+      await deleteToothRecordFromFirestore(selectedPatientId, recordId);
+    } catch (err) {
+      console.warn('handleDeleteToothRecord error:', err);
+    }
   };
 
   const handleAddPatientImage = async (imgData: Omit<PatientImage, 'id'>) => {
@@ -411,14 +442,22 @@ export default function App() {
       id: `img_${Date.now()}`,
       patientId: selectedPatientId
     };
-    setPatientImages([newImg, ...patientImages]);
-    await savePatientImageToFirestore(selectedPatientId, newImg, currentUser.clinicId);
+    try {
+      setPatientImages(prev => [newImg, ...prev]);
+      await savePatientImageToFirestore(selectedPatientId, newImg, currentUser.clinicId);
+    } catch (err) {
+      console.warn('handleAddPatientImage error:', err);
+    }
   };
 
   const handleDeletePatientImage = async (imageId: string) => {
     if (!selectedPatientId || !currentUser?.clinicId) return;
-    setPatientImages(patientImages.filter((img) => img.id !== imageId));
-    await deletePatientImageFromFirestore(selectedPatientId, imageId);
+    try {
+      setPatientImages(prev => prev.filter((img) => img.id !== imageId));
+      await deletePatientImageFromFirestore(selectedPatientId, imageId);
+    } catch (err) {
+      console.warn('handleDeletePatientImage error:', err);
+    }
   };
 
   const handleAddPayment = async (payData: Omit<Payment, 'id'>) => {
@@ -428,19 +467,27 @@ export default function App() {
       id: `pay_${Date.now()}`,
       patientId: selectedPatientId
     };
-    setPayments([newPay, ...payments]);
-    await savePaymentToFirestore(selectedPatientId, newPay, currentUser.clinicId);
+    try {
+      setPayments(prev => [newPay, ...prev]);
+      await savePaymentToFirestore(selectedPatientId, newPay, currentUser.clinicId);
+    } catch (err) {
+      console.warn('handleAddPayment error:', err);
+    }
   };
 
   const handleDeletePayment = async (paymentId: string, amount: number) => {
     if (!selectedPatientId || !currentUser?.clinicId) return;
-    setPayments(payments.filter((p) => p.id !== paymentId));
-    await deletePaymentFromFirestore(selectedPatientId, paymentId);
-    if (activePatient) {
-      const newBalance = (activePatient.balance || 0) + (amount || 0);
-      const updatedPatient = { ...activePatient, balance: newBalance };
-      setPatients(patients.map((p) => (p.id === activePatient.id ? updatedPatient : p)));
-      await savePatientToFirestore(updatedPatient);
+    try {
+      setPayments(prev => prev.filter((p) => p.id !== paymentId));
+      await deletePaymentFromFirestore(selectedPatientId, paymentId);
+      if (activePatient) {
+        const newBalance = (activePatient.balance || 0) + (amount || 0);
+        const updatedPatient = { ...activePatient, balance: newBalance };
+        setPatients(prev => prev.map((p) => (p.id === activePatient.id ? updatedPatient : p)));
+        await savePatientToFirestore(updatedPatient);
+      }
+    } catch (err) {
+      console.warn('handleDeletePayment error:', err);
     }
   };
 
@@ -451,8 +498,12 @@ export default function App() {
       id: `app_${Date.now()}`,
       clinicId: cid
     };
-    setAppointments([newApp, ...appointments]);
-    await saveAppointmentToFirestore(newApp);
+    try {
+      setAppointments(prev => [newApp, ...prev]);
+      await saveAppointmentToFirestore(newApp);
+    } catch (err) {
+      console.warn('handleAddAppointment error:', err);
+    }
   };
 
   const handleDeleteAppointment = async (appointmentId: string) => {

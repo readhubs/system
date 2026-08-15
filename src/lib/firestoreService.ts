@@ -78,11 +78,23 @@ export async function updateClinicPlanInFirestore(
 ) {
   try {
     const updateData: any = { plan };
-    if (expiresAt) updateData.subscriptionExpiresAt = expiresAt;
+    if (expiresAt) {
+      updateData.subscriptionExpiresAt = expiresAt;
+      updateData.subscriptionEndDate = expiresAt;
+    }
     await updateDoc(doc(db, 'clinics', clinicId), updateData);
     await setDoc(doc(db, 'settings', clinicId), updateData, { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.UPDATE, `clinics/${clinicId}`);
+  }
+}
+
+export async function deleteClinicFromFirestore(clinicId: string) {
+  try {
+    await deleteDoc(doc(db, 'clinics', clinicId));
+    await deleteDoc(doc(db, 'settings', clinicId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `clinics/${clinicId}`);
   }
 }
 

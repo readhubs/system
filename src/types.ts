@@ -9,14 +9,17 @@ export interface Clinic {
   name: string;
   doctorName: string;
   email: string;
+  ownerEmail?: string;
   phone: string;
   status: ClinicStatus;
   plan: SubscriptionPlan;
   createdAt: string;
   subscriptionExpiresAt?: string;
+  subscriptionEndDate?: string;
   notes?: string;
   whatsappTemplate?: string;
   patientsCount?: number;
+  archived?: boolean;
 }
 
 export interface PermissionsMap {

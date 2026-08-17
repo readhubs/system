@@ -379,9 +379,9 @@ export default function App() {
       setPatients(prev => [newPatient, ...prev.filter(p => p.id !== newPatient.id)]);
       setSelectedPatientId(newPatient.id);
       await savePatientToFirestore(newPatient);
-    } catch (err) {
+    } catch (err: any) {
       console.warn('handleAddPatient Firestore error:', err);
-      alert('Failed to sync patient to the server. Please check your connection or permissions.');
+      alert(`Failed to sync patient to the server: ${err?.message || err}. Please check your connection or permissions.`);
       // Revert optimistic update
       setPatients(prev => prev.filter(p => p.id !== newPatient.id));
       setSelectedPatientId(null);

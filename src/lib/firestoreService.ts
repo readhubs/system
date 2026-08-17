@@ -395,14 +395,15 @@ export function subscribePatients(
 }
 
 export async function savePatientToFirestore(patient: Patient) {
-  if (patient.clinicId) {
-    const current = getCachedPatients(patient.clinicId);
-    const updated = [patient, ...current.filter((p) => p.id !== patient.id)];
-    saveCachedPatients(patient.clinicId, updated);
-  }
-
   try {
     await setDoc(doc(db, 'patients', patient.id), patient, { merge: true });
+    
+    // Only update local cache AFTER successful cloud write
+    if (patient.clinicId) {
+      const current = getCachedPatients(patient.clinicId);
+      const updated = [patient, ...current.filter((p) => p.id !== patient.id)];
+      saveCachedPatients(patient.clinicId, updated);
+    }
   } catch (err) {
     console.warn('savePatientToFirestore note:', err);
     handleFirestoreError(err, OperationType.WRITE, `patients/${patient.id}`);

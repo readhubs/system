@@ -375,11 +375,16 @@ export default function App() {
     });
 
     try {
+      // Optimistic update
       setPatients(prev => [newPatient, ...prev.filter(p => p.id !== newPatient.id)]);
       setSelectedPatientId(newPatient.id);
       await savePatientToFirestore(newPatient);
     } catch (err) {
       console.warn('handleAddPatient Firestore error:', err);
+      alert('Failed to sync patient to the server. Please check your connection or permissions.');
+      // Revert optimistic update
+      setPatients(prev => prev.filter(p => p.id !== newPatient.id));
+      setSelectedPatientId(null);
     } finally {
       setShowAddPatientModal(false);
     }
@@ -391,11 +396,17 @@ export default function App() {
       if ((updated as any)[key] === undefined) delete (updated as any)[key];
     });
 
+    const previousPatient = patients.find(p => p.id === updated.id);
+
     try {
       setPatients(prev => prev.map((p) => (p.id === updated.id ? updated : p)));
       await savePatientToFirestore(updated);
     } catch (err) {
       console.warn('handleUpdatePatient Firestore error:', err);
+      alert('Failed to update patient on the server. Please check your connection.');
+      if (previousPatient) {
+        setPatients(prev => prev.map((p) => (p.id === updated.id ? previousPatient : p)));
+      }
     }
   };
 

@@ -145,6 +145,8 @@ export interface Patient {
   clinicId: string;
   createdAt: string;
   branchId?: string;
+  consentGivenAt?: string;
+  consentGivenBy?: string;
 }
 
 export interface ToothRecord {

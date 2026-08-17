@@ -64,9 +64,9 @@ service cloud.firestore {
 
     // Clinics Collection: Super admin full control, Tenant isolation
     match /clinics/{clinicId} {
-      allow read, list: if isSuperAdmin() || isSignedIn();
-      allow create: if isSuperAdmin() || isSignedIn();
-      allow update, write: if isSuperAdmin() || (isSignedIn() && (resource == null || resource.data.clinicId == request.auth.uid || resource.data.id == clinicId || resource.data.ownerEmail == request.auth.token.email || isClinicMember(clinicId)));
+      allow read, list: if isSuperAdmin() || (isSignedIn() && (resource == null || resource.data.ownerEmail == request.auth.token.email || isClinicMember(clinicId)));
+      allow create: if isSuperAdmin() || (isSignedIn() && (request.resource == null || request.resource.data.ownerEmail == request.auth.token.email || isClinicMember(clinicId)));
+      allow update, write: if isSuperAdmin() || (isSignedIn() && (resource == null || resource.data.ownerEmail == request.auth.token.email || isClinicMember(clinicId)));
       allow delete: if isSuperAdmin();
     }
 
@@ -79,7 +79,7 @@ service cloud.firestore {
 
     // Doctors Directory
     match /doctors/{doctorId} {
-      allow read: if isSignedIn();
+      allow read: if isSuperAdmin() || (isSignedIn() && (resource == null || isClinicMember(resource.data.clinicId)));
       allow write: if isSuperAdmin() || (isSignedIn() && hasPerm('manageStaff'));
     }
 
@@ -119,8 +119,8 @@ service cloud.firestore {
 
     // Settings (Isolated by clinicId)
     match /settings/{clinicId} {
-      allow read, list: if isSuperAdmin() || isSignedIn();
-      allow create, update, write: if isSuperAdmin() || isSignedIn();
+      allow read, list: if isSuperAdmin() || isClinicMember(clinicId);
+      allow create, update, write: if isSuperAdmin() || isClinicMember(clinicId);
       allow delete: if isSuperAdmin();
     }
 

@@ -53,6 +53,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   const [address, setAddress] = useState(initialData?.address || '');
   const [medicalAlerts, setMedicalAlerts] = useState<string[]>(initialData?.medicalAlerts || []);
   const [medicalNotes, setMedicalNotes] = useState(initialData?.medicalNotes || '');
+  const [consentGiven, setConsentGiven] = useState(!!initialData); // True if editing existing patient
 
   const toggleAlert = (condition: string) => {
     if (medicalAlerts.includes(condition)) {
@@ -66,6 +67,11 @@ export const PatientForm: React.FC<PatientFormProps> = ({
     e.preventDefault();
     if (!name.trim() || !phone.trim()) {
       setActiveTab('general');
+      return;
+    }
+    
+    if (!consentGiven) {
+      alert('You must confirm that the patient has consented to storing their medical data.');
       return;
     }
 
@@ -330,6 +336,29 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm font-mono focus:border-sky-500 outline-none"
                 />
               </div>
+              
+              {!initialData && (
+                <div className="pt-4 mt-2 border-t border-slate-100">
+                  <label className="flex items-start gap-3 p-3 rounded-xl bg-sky-50/50 border border-sky-100 cursor-pointer hover:bg-sky-50 transition-colors">
+                    <div className="flex items-center h-5">
+                      <input
+                        type="checkbox"
+                        checked={consentGiven}
+                        onChange={(e) => setConsentGiven(e.target.checked)}
+                        className="w-4 h-4 text-sky-600 bg-white border-slate-300 rounded focus:ring-sky-600"
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-slate-800">
+                        Patient Consent Confirmation <span className="text-red-500">*</span>
+                      </span>
+                      <span className="text-xs text-slate-500 leading-relaxed mt-0.5">
+                        I confirm the patient has consented to storing their medical data for treatment management purposes.
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              )}
             </div>
           )}
 

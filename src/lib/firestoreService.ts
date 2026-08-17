@@ -669,6 +669,24 @@ export function subscribeClinicDoc(clinicId: string, onUpdate: (clinic: Clinic |
 // 10. Dental Labs Management
 // ==========================================
 
+export async function fetchLabOrders(clinicId: string): Promise<DentalLabOrder[]> {
+  try {
+    const q = query(
+      collection(db, 'labOrders'),
+      where('clinicId', '==', clinicId),
+      orderBy('createdAt', 'desc')
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    })) as DentalLabOrder[];
+  } catch (err) {
+    console.warn('fetchLabOrders error:', err);
+    return [];
+  }
+}
+
 export function subscribeLabOrders(clinicId: string, onUpdate: (orders: DentalLabOrder[]) => void) {
   const q = query(
     collection(db, 'labOrders'),
@@ -740,6 +758,20 @@ export function subscribeDoctors(clinicId: string, onUpdate: (doctors: Doctor[])
   );
 }
 
+export async function fetchAllClinicPayments(clinicId: string): Promise<Payment[]> {
+  try {
+    const q = query(collectionGroup(db, 'payments'), where('clinicId', '==', clinicId));
+    const snap = await getDocs(q);
+    return snap.docs.map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    })) as Payment[];
+  } catch (err: any) {
+    console.warn('fetchAllClinicPayments error:', err);
+    return [];
+  }
+}
+
 export function subscribeAllClinicPayments(clinicId: string, onUpdate: (payments: Payment[]) => void) {
   try {
     const q = query(collectionGroup(db, 'payments'), where('clinicId', '==', clinicId));
@@ -765,6 +797,20 @@ export function subscribeAllClinicPayments(clinicId: string, onUpdate: (payments
   } catch (err) {
     console.warn('Fallback collectionGroup payments:', err);
     return () => {};
+  }
+}
+
+export async function fetchAllClinicToothRecords(clinicId: string): Promise<ToothRecord[]> {
+  try {
+    const q = query(collectionGroup(db, 'toothRecords'), where('clinicId', '==', clinicId));
+    const snap = await getDocs(q);
+    return snap.docs.map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    })) as ToothRecord[];
+  } catch (err: any) {
+    console.warn('fetchAllClinicToothRecords error:', err);
+    return [];
   }
 }
 

@@ -9,7 +9,7 @@ interface SuspendedClinicScreenProps {
 }
 
 export function SuspendedClinicScreen({ clinicName, onLogout }: SuspendedClinicScreenProps) {
-  const adminWhatsApp = '201000000000'; // Default Egyptian admin WhatsApp
+  const adminWhatsApp = '201271476215'; // Default Egyptian admin WhatsApp
 
   const handleWhatsAppContact = () => {
     const text = encodeURIComponent(

@@ -31,6 +31,7 @@ export const AppointmentsPage: React.FC<AppointmentsPageProps> = ({
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>(doctors[0]?.id || '');
   const [appTime, setAppTime] = useState<string>('15:00');
   const [procedure, setProcedure] = useState<string>('Consultation & Examination');
+  const [conflictError, setConflictError] = useState<string | null>(null);
 
   const filteredAppointments = appointments.filter((app) => {
     const dateMatch = app.date === selectedDate;
@@ -40,10 +41,28 @@ export const AppointmentsPage: React.FC<AppointmentsPageProps> = ({
 
   const handleCreateAppointment = (e: React.FormEvent) => {
     e.preventDefault();
+    setConflictError(null);
+
     const patient = patients.find((p) => p.id === selectedPatientId);
     const doctor = doctors.find((d) => d.id === selectedDoctorId);
 
     if (!patient) return;
+
+    // Check for existing appointment overlap for the same doctor at the same date & time
+    const existingConflict = appointments.find(
+      (app) =>
+        app.doctorId === selectedDoctorId &&
+        app.date === selectedDate &&
+        app.time === appTime &&
+        app.status !== 'cancelled'
+    );
+
+    if (existingConflict) {
+      setConflictError(
+        `Scheduling Conflict: ${existingConflict.doctorName || doctor?.name || 'Doctor'} already has an active appointment with ${existingConflict.patientName} at ${appTime} on ${selectedDate}. Please select another time or doctor.`
+      );
+      return;
+    }
 
     onAddAppointment({
       patientId: patient.id,
@@ -254,6 +273,13 @@ export const AppointmentsPage: React.FC<AppointmentsPageProps> = ({
             </div>
 
             <form onSubmit={handleCreateAppointment} className="space-y-4 text-sm font-medium">
+              {conflictError && (
+                <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div>{conflictError}</div>
+                </div>
+              )}
+
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                   Select Patient *

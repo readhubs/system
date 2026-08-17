@@ -73,6 +73,8 @@ import { SuperAdminPortal } from './components/SuperAdminPortal';
 import { SuspendedClinicScreen } from './components/SuspendedClinicScreen';
 import { AssistantDashboard } from './components/AssistantDashboard';
 import { FloatingActionButton } from './components/FloatingActionButton';
+import { PrivacyPolicy } from './components/PrivacyPolicy';
+import { TermsOfService } from './components/TermsOfService';
 
 export default function App() {
   // Authentication State
@@ -107,6 +109,7 @@ export default function App() {
   const [lang, setLang] = useState<'en' | 'ar'>('en');
 
   // Navigation State & GitHub Pages Hash Routing
+  const [currentPath, setCurrentPath] = useState<string>(window.location.pathname || '');
   const [currentHash, setCurrentHash] = useState<string>(window.location.hash || '');
   const [activeTab, setActiveTab] = useState<string>('desk');
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
@@ -120,15 +123,19 @@ export default function App() {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [deferredPwaPrompt, setDeferredPwaPrompt] = useState<any>(null);
 
-  // 1. Listen to Hash changes for GitHub Pages client-side routing
+  // 1. Listen to Hash & Path changes for client-side routing
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash || '';
-      setCurrentHash(hash);
+    const handleLocationChange = () => {
+      setCurrentHash(window.location.hash || '');
+      setCurrentPath(window.location.pathname || '');
     };
 
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
+    return () => {
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
+    };
   }, []);
 
   // 2. Firebase Auth Listener & Cached Session Loader
@@ -583,6 +590,33 @@ export default function App() {
         <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
         <p className="text-xs font-bold text-slate-400">Verifying Dental Practice Credentials...</p>
       </div>
+    );
+  }
+
+  // Standalone Public Legal Routes (Accessible without authentication)
+  if (currentPath === '/privacy' || currentHash === '#privacy') {
+    return (
+      <PrivacyPolicy
+        onBack={() => {
+          window.location.hash = '';
+          window.history.pushState({}, '', '/');
+          setCurrentPath('/');
+          setCurrentHash('');
+        }}
+      />
+    );
+  }
+
+  if (currentPath === '/terms' || currentHash === '#terms') {
+    return (
+      <TermsOfService
+        onBack={() => {
+          window.location.hash = '';
+          window.history.pushState({}, '', '/');
+          setCurrentPath('/');
+          setCurrentHash('');
+        }}
+      />
     );
   }
 

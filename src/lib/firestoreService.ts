@@ -752,8 +752,14 @@ export function subscribeAllClinicPayments(clinicId: string, onUpdate: (payments
         })) as Payment[];
         onUpdate(list);
       },
-      (err) => {
+      (err: any) => {
         console.warn('Payments collectionGroup note:', err);
+        if (err?.message?.includes('requires an index')) {
+          const urlMatch = err.message.match(/https:\/\/console\.firebase\.google\.com[^\s]*/);
+          if (urlMatch) {
+            console.error(`Missing Index! To view all payments in Financial Reports across devices, create the index here: ${urlMatch[0]}`);
+          }
+        }
       }
     );
   } catch (err) {
@@ -774,8 +780,14 @@ export function subscribeAllClinicToothRecords(clinicId: string, onUpdate: (reco
         })) as ToothRecord[];
         onUpdate(list);
       },
-      (err) => {
+      (err: any) => {
         console.warn('ToothRecords collectionGroup note:', err);
+        if (err?.message?.includes('requires an index')) {
+          const urlMatch = err.message.match(/https:\/\/console\.firebase\.google\.com[^\s]*/);
+          if (urlMatch) {
+            console.error(`Missing Index! To view all procedures in Financial Reports across devices, create the index here: ${urlMatch[0]}`);
+          }
+        }
       }
     );
   } catch (err) {

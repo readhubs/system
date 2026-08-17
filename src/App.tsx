@@ -290,8 +290,24 @@ export default function App() {
       setPatientImages(imgs.map((i) => ({ ...i, patientId: selectedPatientId })));
     });
 
+    const unsubPayments = subscribePatientPayments(selectedPatientId, (patientPayments) => {
+      setPayments(prev => {
+        const others = prev.filter(p => p.patientId !== selectedPatientId);
+        return [...others, ...patientPayments];
+      });
+    });
+
+    const unsubToothRecords = subscribeToothRecords(selectedPatientId, (records) => {
+      setToothRecords(prev => {
+        const others = prev.filter(r => r.patientId !== selectedPatientId);
+        return [...others, ...records];
+      });
+    });
+
     return () => {
       unsubImgs();
+      unsubPayments();
+      unsubToothRecords();
     };
   }, [selectedPatientId, currentUser?.clinicId]);
 

@@ -21,7 +21,9 @@ service cloud.firestore {
       return request.auth != null && (
         (request.auth.token.email != null && (
           request.auth.token.email == 'replitoo55@gmail.com' || 
-          request.auth.token.email == '203256@eru.edu.eg'
+          request.auth.token.email.lower() == 'replitoo55@gmail.com' ||
+          request.auth.token.email == '203256@eru.edu.eg' ||
+          request.auth.token.email.lower() == '203256@eru.edu.eg'
         )) ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin')

@@ -354,7 +354,7 @@ export const DentalLabsPage: React.FC<DentalLabsPageProps> = ({
 
       {/* Add New Lab Order Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[80] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 border border-slate-200">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
@@ -618,7 +618,7 @@ export const DentalLabsPage: React.FC<DentalLabsPageProps> = ({
 
       {/* PRINTABLE LAB WORK ORDER SLIP MODAL */}
       {orderToPrint && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto print:p-0 print:bg-white">
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-[80] flex items-center justify-center p-4 overflow-y-auto print:p-0 print:bg-white">
           <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 animate-in fade-in zoom-in-95 border border-slate-200 print:border-none print:shadow-none print:m-0 print:p-0 print:rounded-none">
             {/* Top Toolbar (Hidden on print) */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-4 print:hidden">

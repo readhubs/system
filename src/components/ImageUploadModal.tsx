@@ -93,7 +93,7 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[80] p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8 space-y-6 animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
@@ -113,7 +113,7 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 p-2 text-xl font-bold rounded-xl hover:bg-slate-100"
+            className="text-slate-500 hover:text-slate-700 p-2 text-xl font-bold rounded-xl hover:bg-slate-100"
           >
             ✕
           </button>
@@ -179,7 +179,7 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
                   <FileImage className="w-10 h-10 text-sky-600 mx-auto group-hover:scale-110 transition-transform" />
                   <div>
                     <p className="text-sm font-bold text-slate-800">Click or drag X-Ray image or .DCM here</p>
-                    <p className="text-xs text-slate-400">Supports JPG, PNG, WEBP, and DICOM (.dcm)</p>
+                    <p className="text-xs text-slate-500">Supports JPG, PNG, WEBP, and DICOM (.dcm)</p>
                   </div>
                 </div>
               )}

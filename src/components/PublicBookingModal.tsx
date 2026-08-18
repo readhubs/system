@@ -56,7 +56,7 @@ export const PublicBookingModal: React.FC<PublicBookingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[80] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
         {/* Header */}
         <div className="bg-gradient-to-r from-sky-600 to-sky-800 p-6 text-white flex items-center justify-between">

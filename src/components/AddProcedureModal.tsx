@@ -95,7 +95,7 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[80] p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8 space-y-6 animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
@@ -115,7 +115,7 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 p-2 text-xl font-bold rounded-xl hover:bg-slate-100"
+            className="text-slate-500 hover:text-slate-700 p-2 text-xl font-bold rounded-xl hover:bg-slate-100"
           >
             ✕
           </button>
@@ -154,7 +154,7 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
                 placeholder="Enter custom procedure name"
                 value={customProcedure}
                 onChange={(e) => setCustomProcedure(e.target.value)}
-                className="w-full mt-2 p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none text-slate-900 bg-white placeholder:text-slate-400 text-sm font-medium"
+                className="w-full mt-2 p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none text-slate-900 bg-white placeholder:text-slate-500 text-sm font-medium"
               />
             )}
           </div>
@@ -192,7 +192,7 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
                   <DollarSign className="w-3.5 h-3.5 text-emerald-600" /> Cost (EGP) *
                 </label>
-                <span className="text-[10px] text-slate-400 font-semibold">Editable override</span>
+                <span className="text-[10px] text-slate-500 font-semibold">Editable override</span>
               </div>
               <input
                 type="number"
@@ -312,7 +312,7 @@ export const AddProcedureModal: React.FC<AddProcedureModalProps> = ({
               placeholder="Instrumentation details, materials used, shade, prognosis..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none text-slate-900 bg-white placeholder:text-slate-400 font-medium"
+              className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none text-slate-900 bg-white placeholder:text-slate-500 font-medium"
             />
           </div>
 

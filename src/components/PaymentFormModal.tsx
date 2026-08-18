@@ -67,7 +67,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[80] p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8 space-y-6 animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
@@ -82,7 +82,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 p-2 text-xl font-bold rounded-xl hover:bg-slate-100"
+            className="text-slate-500 hover:text-slate-700 p-2 text-xl font-bold rounded-xl hover:bg-slate-100"
           >
             ✕
           </button>
@@ -109,7 +109,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setAmount('')}
-                    className="text-[11px] font-bold text-slate-400 hover:text-slate-600 hover:underline"
+                    className="text-[11px] font-bold text-slate-500 hover:text-slate-600 hover:underline"
                   >
                     Clear
                   </button>
@@ -191,7 +191,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               placeholder="e.g. Partial payment for Zirconia crown, receipt issued"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none text-slate-900 bg-white placeholder:text-slate-400 font-medium"
+              className="w-full p-3 rounded-xl border border-slate-300 focus:border-sky-500 outline-none text-slate-900 bg-white placeholder:text-slate-500 font-medium"
             />
           </div>
 

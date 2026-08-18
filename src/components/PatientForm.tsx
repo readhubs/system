@@ -94,7 +94,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[80] p-3 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl border border-slate-100 my-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -114,7 +114,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 p-2 text-xl font-bold rounded-xl hover:bg-slate-100"
+            className="text-slate-500 hover:text-slate-700 p-2 text-xl font-bold rounded-xl hover:bg-slate-100"
           >
             ✕
           </button>
@@ -177,7 +177,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   placeholder="e.g. Ahmed Mahmoud El-Sayed"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-sky-500 outline-none text-sm font-semibold min-h-[48px]"
+                  className="w-full p-3.5 rounded-2xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-sky-500 outline-none text-sm font-semibold min-h-[48px]"
                 />
               </div>
 
@@ -192,7 +192,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   placeholder="01012345678"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-sky-500 outline-none text-sm font-mono min-h-[48px]"
+                  className="w-full p-3.5 rounded-2xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-sky-500 outline-none text-sm font-mono min-h-[48px]"
                 />
               </div>
 
@@ -234,7 +234,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                     placeholder="e.g. 28"
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm min-h-[44px] focus:border-sky-500 outline-none"
+                    className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-500 text-sm min-h-[44px] focus:border-sky-500 outline-none"
                   />
                 </div>
               </div>
@@ -287,7 +287,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   placeholder="e.g. Allergy to Sulfa drugs, taking Blood pressure med Coversyl daily"
                   value={medicalNotes}
                   onChange={(e) => setMedicalNotes(e.target.value)}
-                  className="w-full p-3 rounded-2xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-xs outline-none focus:border-amber-500"
+                  className="w-full p-3 rounded-2xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-500 text-xs outline-none focus:border-amber-500"
                 />
               </div>
             </div>
@@ -306,7 +306,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   placeholder="e.g. Teacher, Engineer, Student"
                   value={occupation}
                   onChange={(e) => setOccupation(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:border-sky-500 outline-none"
+                  className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-500 text-sm focus:border-sky-500 outline-none"
                 />
               </div>
 
@@ -320,7 +320,7 @@ export const PatientForm: React.FC<PatientFormProps> = ({
                   placeholder="e.g. Nasr City, Cairo"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:border-sky-500 outline-none"
+                  className="w-full p-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder:text-slate-500 text-sm focus:border-sky-500 outline-none"
                 />
               </div>
 

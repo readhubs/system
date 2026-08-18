@@ -363,7 +363,7 @@ service cloud.firestore {
                   {auth.currentUser?.email ? `Auth: ${auth.currentUser.email}` : 'Local & Cloud Sync Active'}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Multi-Tenant Clinic Control & Manual InstaPay Subscription Manager
               </p>
             </div>
@@ -400,7 +400,7 @@ service cloud.firestore {
         {/* Overview Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
               <span>Total Clinics</span>
               <Building2 className="w-4 h-4 text-indigo-400" />
             </div>
@@ -411,7 +411,7 @@ service cloud.firestore {
           </div>
 
           <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
               <span>Active Subscriptions</span>
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             </div>
@@ -422,7 +422,7 @@ service cloud.firestore {
           </div>
 
           <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
               <span>Suspended Clinics</span>
               <XCircle className="w-4 h-4 text-rose-400" />
             </div>
@@ -433,7 +433,7 @@ service cloud.firestore {
           </div>
 
           <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
               <span>Paid (InstaPay)</span>
               <CreditCard className="w-4 h-4 text-amber-400" />
             </div>
@@ -447,7 +447,7 @@ service cloud.firestore {
         {/* Filters and Search */}
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row gap-3 items-center justify-between">
           <div className="relative w-full md:w-96">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search clinic name, doctor, phone, email..."
@@ -486,7 +486,7 @@ service cloud.firestore {
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-slate-300">
-              <thead className="bg-slate-950/80 text-xs uppercase font-bold text-slate-400 border-b border-slate-800">
+              <thead className="bg-slate-950/80 text-xs uppercase font-bold text-slate-500 border-b border-slate-800">
                 <tr>
                   <th className="p-4">Clinic & Doctor</th>
                   <th className="p-4">Contact</th>
@@ -499,7 +499,7 @@ service cloud.firestore {
               <tbody className="divide-y divide-slate-800">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="p-12 text-center text-slate-400">
+                    <td colSpan={6} className="p-12 text-center text-slate-500">
                       <div className="flex flex-col items-center justify-center gap-3">
                         <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
                         <span className="text-sm font-medium">Connecting to Firestore database...</span>
@@ -519,7 +519,7 @@ service cloud.firestore {
                       <tr key={clinic.id} className="hover:bg-slate-800/40 transition-colors">
                         <td className="p-4">
                           <div className="font-bold text-white text-base">{clinic.name}</div>
-                          <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                          <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                             <User className="w-3 h-3 text-indigo-400" />
                             {clinic.doctorName}
                           </div>
@@ -550,7 +550,7 @@ service cloud.firestore {
                             </div>
                           )}
                           {contactEmail && (
-                            <div className="text-xs text-slate-400 flex items-center gap-1.5">
+                            <div className="text-xs text-slate-500 flex items-center gap-1.5">
                               <Mail className="w-3 h-3 text-slate-500" />
                               <span className="truncate max-w-[170px]" title={contactEmail}>
                                 {contactEmail}
@@ -650,7 +650,7 @@ service cloud.firestore {
                             </button>
                             <button
                               onClick={() => setClinicToDelete(clinic)}
-                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors"
+                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-500 hover:text-rose-400 transition-colors"
                               title="Delete/Archive Tenant"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -666,7 +666,7 @@ service cloud.firestore {
                       <div className="flex flex-col items-center justify-center gap-3">
                         <Building2 className="w-10 h-10 text-slate-700" />
                         <div>
-                          <p className="text-base font-bold text-slate-400">No clinics registered in database</p>
+                          <p className="text-base font-bold text-slate-500">No clinics registered in database</p>
                           <p className="text-xs text-slate-500 mt-1">
                             {searchQuery
                               ? 'No results matched your search query.'
@@ -694,7 +694,7 @@ service cloud.firestore {
 
       {/* Add Clinic Modal */}
       {showAddClinicModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
@@ -704,7 +704,7 @@ service cloud.firestore {
               <button
                 type="button"
                 onClick={() => setShowAddClinicModal(false)}
-                className="text-slate-400 hover:text-slate-200"
+                className="text-slate-500 hover:text-slate-200"
               >
                 <XCircle className="w-5 h-5" />
               </button>
@@ -801,7 +801,7 @@ service cloud.firestore {
 
       {/* Delete / Archive Confirmation Modal */}
       {clinicToDelete && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 mx-auto">
               <AlertTriangle className="w-6 h-6" />
@@ -809,7 +809,7 @@ service cloud.firestore {
 
             <div className="text-center space-y-1">
               <h3 className="text-base font-bold text-white">Delete Tenant Clinic?</h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Are you sure you want to delete <span className="font-bold text-slate-200">"{clinicToDelete.name}"</span>?
                 This removes the clinic document from Firestore.
               </p>
@@ -843,7 +843,7 @@ service cloud.firestore {
 
       {/* Security Rules Guide Modal */}
       {showRulesModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4 shrink-0">
               <div className="flex items-center gap-3">
@@ -852,7 +852,7 @@ service cloud.firestore {
                 </div>
                 <div>
                   <h2 className="text-lg font-black text-white">Firestore Security Rules Setup</h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Fix "permission-denied" errors in your Firebase project (<span className="text-indigo-300 font-mono">clinical-mang</span>)
                   </p>
                 </div>
@@ -860,7 +860,7 @@ service cloud.firestore {
               <button
                 type="button"
                 onClick={() => setShowRulesModal(false)}
-                className="p-2 text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800 transition-colors"
+                className="p-2 text-slate-500 hover:text-slate-200 rounded-lg hover:bg-slate-800 transition-colors"
               >
                 <XCircle className="w-5 h-5" />
               </button>
@@ -884,7 +884,7 @@ service cloud.firestore {
                 <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">
                   How to sync with Cloud Firestore:
                 </p>
-                <ol className="list-decimal list-inside space-y-1.5 text-slate-400 pl-1">
+                <ol className="list-decimal list-inside space-y-1.5 text-slate-500 pl-1">
                   <li>
                     Open{' '}
                     <a

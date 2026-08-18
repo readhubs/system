@@ -37,7 +37,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                 <Phone className="w-3.5 h-3.5 text-sky-600" /> {patient.phone}
               </span>
               <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" /> DOB: {patient.birthDate}
+                <Calendar className="w-3.5 h-3.5 text-slate-500" /> DOB: {patient.birthDate}
               </span>
             </div>
           </div>
@@ -46,7 +46,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
         {/* Balance Stat & Quick Actions */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <div className="text-right px-4 py-2 bg-slate-50 border border-slate-200/60 rounded-xl">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Patient Balance</p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Patient Balance</p>
             <p
               className={`text-lg font-black font-mono ${
                 patient.balance > 0 ? 'text-amber-600' : 'text-emerald-600'
@@ -70,7 +70,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
+              className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
               title="Delete Patient Record"
             >
               <Trash2 className="w-4 h-4" />
@@ -81,7 +81,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[80] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />

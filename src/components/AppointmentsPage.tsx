@@ -181,7 +181,7 @@ export const AppointmentsPage: React.FC<AppointmentsPageProps> = ({
                       {app.procedure} • <span className="text-slate-500">{app.doctorName || 'Dr. Mohamed'}</span>
                     </p>
 
-                    <p className="text-xs font-mono text-slate-400 mt-0.5 flex items-center gap-1">
+                    <p className="text-xs font-mono text-slate-500 mt-0.5 flex items-center gap-1">
                       <Phone className="w-3 h-3" /> {app.phone}
                     </p>
                   </div>
@@ -238,7 +238,7 @@ export const AppointmentsPage: React.FC<AppointmentsPageProps> = ({
                           onDeleteAppointment(app.id);
                         }
                       }}
-                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                      className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
                       title="Delete Appointment"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -249,24 +249,24 @@ export const AppointmentsPage: React.FC<AppointmentsPageProps> = ({
             );
           })
         ) : (
-          <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400 space-y-2">
-            <Calendar className="w-10 h-10 mx-auto text-slate-300" />
+          <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-500 space-y-2">
+            <Calendar className="w-10 h-10 mx-auto text-slate-500" />
             <p className="font-bold text-slate-700">No appointments found for {selectedDate}</p>
-            <p className="text-xs text-slate-400">Click "Book Appointment" to schedule a visit.</p>
+            <p className="text-xs text-slate-500">Click "Book Appointment" to schedule a visit.</p>
           </div>
         )}
       </div>
 
       {/* Book Appointment Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[80] p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8 space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <h2 className="text-xl font-extrabold text-slate-900">Schedule Appointment</h2>
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-700 p-2 text-xl font-bold"
+                className="text-slate-500 hover:text-slate-700 p-2 text-xl font-bold"
               >
                 ✕
               </button>

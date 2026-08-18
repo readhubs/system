@@ -24,7 +24,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center z-[80] p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8 space-y-6 animate-in fade-in zoom-in-95 duration-150">
         {/* Top Control Bar (Hidden on Print) */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-4 no-print">
@@ -46,7 +46,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 text-xl font-bold"
+              className="p-2 text-slate-500 hover:text-slate-700 rounded-xl hover:bg-slate-100 text-xl font-bold"
             >
               ✕
             </button>
@@ -75,11 +75,11 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           {/* Patient Details */}
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 flex justify-between items-center text-xs">
             <div>
-              <span className="text-slate-400 uppercase font-bold tracking-wider">Patient Name: </span>
+              <span className="text-slate-500 uppercase font-bold tracking-wider">Patient Name: </span>
               <span className="font-extrabold text-slate-900 text-sm">{patientName}</span>
             </div>
             <div>
-              <span className="text-slate-400 font-bold uppercase tracking-wider">Tel: </span>
+              <span className="text-slate-500 font-bold uppercase tracking-wider">Tel: </span>
               <span className="font-mono font-bold text-slate-800">{patientPhone}</span>
             </div>
           </div>
@@ -106,7 +106,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   ))
                 ) : (
                   <tr className="font-medium">
-                    <td className="p-2.5 font-mono text-slate-400">--</td>
+                    <td className="p-2.5 font-mono text-slate-500">--</td>
                     <td className="p-2.5 text-slate-600">Dental Treatment Services</td>
                     <td className="p-2.5 text-right font-mono font-bold">{payment.amount.toLocaleString()} EGP</td>
                   </tr>
@@ -134,7 +134,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           </div>
 
           {/* Footer note */}
-          <div className="text-center text-[11px] text-slate-400 pt-6 border-t border-slate-100">
+          <div className="text-center text-[11px] text-slate-500 pt-6 border-t border-slate-100">
             <p className="font-semibold">Thank you for choosing {clinicSettings.name}.</p>
             <p>Computer-generated clinical statement & receipt.</p>
           </div>

@@ -155,7 +155,7 @@ export const StaffManagementPage: React.FC<StaffManagementPageProps> = ({
                     } ${
                       isEnabled
                         ? 'bg-sky-50/60 border-sky-200 text-slate-900'
-                        : 'bg-slate-50 border-slate-200/80 text-slate-400'
+                        : 'bg-slate-50 border-slate-200/80 text-slate-500'
                     }`}
                   >
                     <input
@@ -179,14 +179,14 @@ export const StaffManagementPage: React.FC<StaffManagementPageProps> = ({
 
       {/* Add Staff Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[80] p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 my-8 space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <h2 className="text-xl font-extrabold text-slate-900">Add Staff Account</h2>
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-700 p-2 text-xl font-bold"
+                className="text-slate-500 hover:text-slate-700 p-2 text-xl font-bold"
               >
                 ✕
               </button>

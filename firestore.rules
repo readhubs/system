@@ -25,8 +25,7 @@ service cloud.firestore {
           request.auth.token.email == '203256@eru.edu.eg' ||
           request.auth.token.email.lower() == '203256@eru.edu.eg'
         )) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin')
+        (hasUserDoc() && getUserData().role == 'super_admin')
       );
     }
 
@@ -34,7 +33,7 @@ service cloud.firestore {
     function isClinicMember(clinicId) {
       return isSignedIn() && (
         isSuperAdmin() || 
-        (hasUserDoc() && getUserData().clinicId == clinicId)
+        (hasUserDoc() && (getUserData().clinicId == clinicId || getUserData().clinicId == 'system'))
       );
     }
 
@@ -42,7 +41,7 @@ service cloud.firestore {
     function isDoctorInClinic(clinicId) {
       return isSuperAdmin() || (
         isClinicMember(clinicId) && 
-        (hasUserDoc() && getUserData().role == 'doctor')
+        (hasUserDoc() && (getUserData().role == 'doctor' || getUserData().role == 'super_admin'))
       );
     }
 
@@ -52,6 +51,7 @@ service cloud.firestore {
         isSuperAdmin() ||
         (hasUserDoc() && (
           getUserData().role == 'doctor' ||
+          getUserData().role == 'super_admin' ||
           (getUserData().permissions != null && getUserData().permissions[permission] == true)
         ))
       );
@@ -73,8 +73,8 @@ service cloud.firestore {
     // Users / Staff Collection
     match /users/{userId} {
       allow read: if true;
-      allow create, update, write: if isSuperAdmin() || (isSignedIn() && (request.auth.uid == userId || (hasUserDoc() && getUserData().role == 'doctor')));
-      allow delete: if isSuperAdmin() || (isSignedIn() && hasUserDoc() && getUserData().role == 'doctor');
+      allow create, update, write: if isSuperAdmin() || (isSignedIn() && (request.auth.uid == userId || (hasUserDoc() && (getUserData().role == 'doctor' || getUserData().role == 'super_admin'))));
+      allow delete: if isSuperAdmin() || (isSignedIn() && hasUserDoc() && (getUserData().role == 'doctor' || getUserData().role == 'super_admin'));
     }
 
     // Doctors Directory
@@ -85,10 +85,10 @@ service cloud.firestore {
 
     // Patients & Sub-collections (strictly isolated by clinicId)
     match /patients/{patientId} {
-      allow read: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('viewPatients'));
-      allow create: if isSuperAdmin() || (isClinicMember(request.resource.data.clinicId) && hasPerm('viewPatients'));
-      allow update: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('viewPatients'));
-      allow delete: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('manageStaff'));
+      allow read: if isSuperAdmin() || (isSignedIn() && (resource == null || isClinicMember(resource.data.clinicId)) && hasPerm('viewPatients'));
+      allow create: if isSuperAdmin() || (isSignedIn() && isClinicMember(request.resource.data.clinicId) && hasPerm('viewPatients'));
+      allow update: if isSuperAdmin() || (isSignedIn() && isClinicMember(resource.data.clinicId) && hasPerm('viewPatients'));
+      allow delete: if isSuperAdmin() || (isSignedIn() && isClinicMember(resource.data.clinicId) && hasPerm('manageStaff'));
 
       // Tooth Clinical Records
       match /toothRecords/{recordId} {
@@ -111,10 +111,10 @@ service cloud.firestore {
 
     // Appointments (Isolated by clinicId)
     match /appointments/{appId} {
-      allow read: if isSuperAdmin() || (resource == null || isClinicMember(resource.data.clinicId));
-      allow create: if isSuperAdmin() || (isClinicMember(request.resource.data.clinicId) && hasPerm('manageAppointments'));
-      allow update: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('manageAppointments'));
-      allow delete: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('manageAppointments'));
+      allow read: if isSuperAdmin() || (isSignedIn() && (resource == null || isClinicMember(resource.data.clinicId)));
+      allow create: if isSuperAdmin() || (isSignedIn() && isClinicMember(request.resource.data.clinicId) && hasPerm('manageAppointments'));
+      allow update: if isSuperAdmin() || (isSignedIn() && isClinicMember(resource.data.clinicId) && hasPerm('manageAppointments'));
+      allow delete: if isSuperAdmin() || (isSignedIn() && isClinicMember(resource.data.clinicId) && hasPerm('manageAppointments'));
     }
 
     // Settings (Isolated by clinicId)
@@ -126,19 +126,19 @@ service cloud.firestore {
 
     // Dental Lab Orders (CAD/CAM Work Orders)
     match /labOrders/{orderId} {
-      allow read: if isSuperAdmin() || (resource == null || isClinicMember(resource.data.clinicId));
-      allow create: if isSuperAdmin() || (isClinicMember(request.resource.data.clinicId) && hasPerm('editClinical'));
-      allow update: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('editClinical'));
-      allow delete: if isSuperAdmin() || (isClinicMember(resource.data.clinicId) && hasPerm('manageStaff'));
+      allow read: if isSuperAdmin() || (isSignedIn() && (resource == null || isClinicMember(resource.data.clinicId)));
+      allow create: if isSuperAdmin() || (isSignedIn() && isClinicMember(request.resource.data.clinicId) && hasPerm('editClinical'));
+      allow update: if isSuperAdmin() || (isSignedIn() && isClinicMember(resource.data.clinicId) && hasPerm('editClinical'));
+      allow delete: if isSuperAdmin() || (isSignedIn() && isClinicMember(resource.data.clinicId) && hasPerm('manageStaff'));
     }
 
     // Collection Group Queries for Financials & Dashboards
     match /{path=**}/payments/{paymentId} {
-      allow read: if isSuperAdmin() || (resource != null && isClinicMember(resource.data.clinicId) && (hasPerm('viewFinancials') || hasPerm('recordPayments')));
+      allow read: if isSuperAdmin() || (isSignedIn() && resource != null && isClinicMember(resource.data.clinicId) && (hasPerm('viewFinancials') || hasPerm('recordPayments')));
     }
     
     match /{path=**}/toothRecords/{recordId} {
-      allow read: if isSuperAdmin() || (resource != null && isClinicMember(resource.data.clinicId) && hasPerm('viewPatients'));
+      allow read: if isSuperAdmin() || (isSignedIn() && resource != null && isClinicMember(resource.data.clinicId) && hasPerm('viewPatients'));
     }
 
     // Connection Health Check
@@ -147,3 +147,4 @@ service cloud.firestore {
     }
   }
 }
+

@@ -154,22 +154,56 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
           }
 
           // Successfully authenticated assistant!
+          let activeUid = staffProfile.uid;
           try {
-            const anonCred = await signInAnonymously(auth);
-            if (anonCred.user) {
-              staffProfile = {
-                ...staffProfile,
-                uid: anonCred.user.uid
-              };
+            if (!auth.currentUser) {
+              const anonCred = await signInAnonymously(auth);
+              if (anonCred.user) {
+                activeUid = anonCred.user.uid;
+              }
+            } else {
+              activeUid = auth.currentUser.uid;
             }
           } catch (anonErr) {
             console.warn('Anonymous auth note (fallback to local session):', anonErr);
           }
 
-          localStorage.setItem(`clinicpro_user_${staffProfile.uid}`, JSON.stringify(staffProfile));
-          localStorage.setItem('clinicpro_active_session', JSON.stringify(staffProfile));
-          await saveUserProfileToFirestore(staffProfile);
-          onAuthenticated(staffProfile);
+          const resolvedClinicId =
+            staffProfile.clinicId && staffProfile.clinicId !== 'system'
+              ? staffProfile.clinicId
+              : 'clinic_cairo_1';
+
+          const activeAssistantProfile: UserProfile = {
+            ...staffProfile,
+            uid: activeUid,
+            clinicId: resolvedClinicId,
+            role: 'assistant',
+            permissions: staffProfile.permissions || {
+              viewPatients: true,
+              editClinical: false,
+              editToothChart: false,
+              uploadViewImages: false,
+              manageAppointments: true,
+              viewFinancials: false,
+              viewPaymentAmounts: false,
+              recordPayments: true,
+              manageStaff: false,
+              accessSettings: false,
+              sendWhatsApp: true
+            }
+          };
+
+          localStorage.setItem(`clinicpro_user_${activeUid}`, JSON.stringify(activeAssistantProfile));
+          localStorage.setItem('clinicpro_active_session', JSON.stringify(activeAssistantProfile));
+          
+          try {
+            await setDoc(doc(db, 'users', activeUid), activeAssistantProfile, { merge: true });
+          } catch (dbErr) {
+            console.warn('Could not write assistant user doc to Firestore:', dbErr);
+          }
+
+          await saveUserProfileToFirestore(activeAssistantProfile);
+          onAuthenticated(activeAssistantProfile);
           return;
         }
 
@@ -194,10 +228,56 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                   (retryStaff.initialPassword && retryStaff.initialPassword === inputPassword) ||
                   (retryStaff.password && retryStaff.password === inputPassword)
                 ) {
-                  localStorage.setItem(`clinicpro_user_${retryStaff.uid}`, JSON.stringify(retryStaff));
-                  localStorage.setItem('clinicpro_active_session', JSON.stringify(retryStaff));
-                  await saveUserProfileToFirestore(retryStaff);
-                  onAuthenticated(retryStaff);
+                  let activeUid = retryStaff.uid;
+                  try {
+                    if (!auth.currentUser) {
+                      const anonCred = await signInAnonymously(auth);
+                      if (anonCred.user) {
+                        activeUid = anonCred.user.uid;
+                      }
+                    } else {
+                      activeUid = auth.currentUser.uid;
+                    }
+                  } catch (anonErr) {
+                    console.warn('Anonymous auth note (fallback to local session):', anonErr);
+                  }
+
+                  const resolvedClinicId =
+                    retryStaff.clinicId && retryStaff.clinicId !== 'system'
+                      ? retryStaff.clinicId
+                      : 'clinic_cairo_1';
+
+                  const activeAssistantProfile: UserProfile = {
+                    ...retryStaff,
+                    uid: activeUid,
+                    clinicId: resolvedClinicId,
+                    role: 'assistant',
+                    permissions: retryStaff.permissions || {
+                      viewPatients: true,
+                      editClinical: false,
+                      editToothChart: false,
+                      uploadViewImages: false,
+                      manageAppointments: true,
+                      viewFinancials: false,
+                      viewPaymentAmounts: false,
+                      recordPayments: true,
+                      manageStaff: false,
+                      accessSettings: false,
+                      sendWhatsApp: true
+                    }
+                  };
+
+                  localStorage.setItem(`clinicpro_user_${activeUid}`, JSON.stringify(activeAssistantProfile));
+                  localStorage.setItem('clinicpro_active_session', JSON.stringify(activeAssistantProfile));
+                  
+                  try {
+                    await setDoc(doc(db, 'users', activeUid), activeAssistantProfile, { merge: true });
+                  } catch (dbErr) {
+                    console.warn('Could not write assistant user doc to Firestore:', dbErr);
+                  }
+
+                  await saveUserProfileToFirestore(activeAssistantProfile);
+                  onAuthenticated(activeAssistantProfile);
                   return;
                 } else {
                   throw new Error('Incorrect password. Please verify the initial password set by the doctor.');
@@ -240,9 +320,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
           const isSuperAdminEmail =
             email.trim().toLowerCase() === 'replitoo55@gmail.com' ||
             email.trim().toLowerCase() === '203256@eru.edu.eg';
-          const determinedClinicId = isSuperAdminEmail
-            ? 'system'
-            : (existingPreProvisionedClinic?.id || `clinic_${uid}`);
+          const determinedClinicId =
+            existingPreProvisionedClinic?.id ||
+            (isSuperAdminEmail ? 'clinic_cairo_1' : `clinic_${uid}`);
 
           profileData = {
             uid,

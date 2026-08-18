@@ -4,6 +4,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   signInAnonymously,
+  sendPasswordResetEmail,
   GoogleAuthProvider
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
@@ -40,6 +41,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
   const [specialty, setSpecialty] = useState('Consultant Prosthodontist & Implantologist');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   // Google Sign-In First-time Clinic Onboarding modal state
   const [showGoogleOnboardModal, setShowGoogleOnboardModal] = useState(false);
@@ -434,31 +437,84 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
     }
   };
 
-  const handleOfflinePracticeBypass = () => {
-    const demoDoctor: UserProfile = {
-      uid: 'offline_doctor_demo',
-      name: doctorName.trim() || 'Dr. Mohamed Al-Sayed',
-      email: email.trim() || 'doctor@clinicpro.eg',
-      role: 'doctor',
-      specialty: specialty.trim() || 'Consultant Prosthodontist & Implantologist',
-      clinicId: 'clinic_primary_demo',
-      permissions: {
-        viewPatients: true,
-        editClinical: true,
-        editToothChart: true,
-        uploadViewImages: true,
-        manageAppointments: true,
-        viewFinancials: true,
-        viewPaymentAmounts: true,
-        recordPayments: true,
-        manageStaff: true,
-        accessSettings: true,
-        sendWhatsApp: true
+  const handleForgotPassword = async () => {
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter your Doctor email address in the field above to receive the password reset link.');
+      return;
+    }
+    setResetLoading(true);
+    setError(null);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setResetEmailSent(true);
+    } catch (err: any) {
+      console.error('Password reset error:', err);
+      let msg = err.message || 'Failed to send password reset email.';
+      if (err.code === 'auth/user-not-found') {
+        msg = `No Doctor account found for ${email.trim()}. If you are new, click "New Doctor Sign Up" tab to register.`;
       }
-    };
-    localStorage.setItem('clinicpro_user_offline_doctor_demo', JSON.stringify(demoDoctor));
-    localStorage.setItem('clinicpro_active_session', JSON.stringify(demoDoctor));
-    onAuthenticated(demoDoctor);
+      setError(msg);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleQuickDemoLogin = (role: 'doctor' | 'assistant') => {
+    if (role === 'doctor') {
+      const demoDoctor: UserProfile = {
+        uid: 'demo_dr_mohamed',
+        name: doctorName.trim() || 'Dr. Mohamed Al-Sayed',
+        email: email.trim() || 'doctor@clinicpro.eg',
+        role: 'doctor',
+        specialty: specialty.trim() || 'Consultant Prosthodontist & Implantologist',
+        clinicId: 'clinic_primary_demo',
+        permissions: {
+          viewPatients: true,
+          editClinical: true,
+          editToothChart: true,
+          uploadViewImages: true,
+          manageAppointments: true,
+          viewFinancials: true,
+          viewPaymentAmounts: true,
+          recordPayments: true,
+          manageStaff: true,
+          accessSettings: true,
+          sendWhatsApp: true
+        }
+      };
+      localStorage.setItem(`clinicpro_user_${demoDoctor.uid}`, JSON.stringify(demoDoctor));
+      localStorage.setItem('clinicpro_active_session', JSON.stringify(demoDoctor));
+      onAuthenticated(demoDoctor);
+    } else {
+      const demoAssistant: UserProfile = {
+        uid: 'demo_ast_sara',
+        name: 'Sara Ali',
+        email: '0123456789@clinicpro.local',
+        phone: '0123456789',
+        role: 'assistant',
+        clinicId: 'clinic_primary_demo',
+        permissions: {
+          viewPatients: true,
+          editClinical: false,
+          editToothChart: false,
+          uploadViewImages: false,
+          manageAppointments: true,
+          viewFinancials: true,
+          viewPaymentAmounts: false,
+          recordPayments: true,
+          manageStaff: false,
+          accessSettings: false,
+          sendWhatsApp: true
+        }
+      };
+      localStorage.setItem(`clinicpro_user_${demoAssistant.uid}`, JSON.stringify(demoAssistant));
+      localStorage.setItem('clinicpro_active_session', JSON.stringify(demoAssistant));
+      onAuthenticated(demoAssistant);
+    }
+  };
+
+  const handleOfflinePracticeBypass = () => {
+    handleQuickDemoLogin('doctor');
   };
 
   return (
@@ -514,12 +570,60 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
         {/* Form Body */}
         <div className="p-6 sm:p-8 space-y-4">
+          {resetEmailSent && (
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-bold flex items-start gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p>Password reset link sent successfully to <span className="underline">{email}</span>.</p>
+                <p className="text-[11px] font-normal text-emerald-700">Please check your inbox (and spam folder) to set a new password, then sign in here.</p>
+              </div>
+            </div>
+          )}
+
           {error && (
-            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-bold flex flex-col gap-2.5">
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-900 text-xs font-bold flex flex-col gap-3">
               <div className="flex items-start gap-2.5">
                 <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                 <span className="leading-relaxed">{error}</span>
               </div>
+
+              {/* Actionable helpers if invalid credential or unrecognized account */}
+              {!isSignUp && (
+                <div className="pt-2 border-t border-rose-200/80 flex flex-col gap-2">
+                  <div className="text-[11px] font-semibold text-rose-700">
+                    💡 Quick solutions:
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSignUp(true);
+                        setError(null);
+                      }}
+                      className="py-2 px-3 bg-white border border-rose-300 text-rose-800 rounded-xl text-[11px] font-extrabold hover:bg-rose-100 transition-all text-left flex items-center justify-between"
+                    >
+                      <span>New Doctor? Create Account</span>
+                      <ArrowRight className="w-3 h-3 shrink-0" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={resetLoading}
+                      className="py-2 px-3 bg-white border border-rose-300 text-rose-800 rounded-xl text-[11px] font-extrabold hover:bg-rose-100 transition-all text-left flex items-center justify-between disabled:opacity-50"
+                    >
+                      <span>{resetLoading ? 'Sending...' : 'Reset Doctor Password'}</span>
+                      <Mail className="w-3 h-3 shrink-0" />
+                    </button>
+                  </div>
+
+                  <p className="text-[10.5px] text-slate-600 font-medium mt-1 leading-snug">
+                    👩‍⚕️ <strong>Reception Assistant Note:</strong> Assistants must enter their registered <strong>Phone Number</strong> (e.g. 0123456789) and the <strong>Initial Password</strong> set by the Doctor in Clinic Settings.
+                  </p>
+                </div>
+              )}
+
               {error.includes('Firebase Authentication "Email/Password"') && (
                 <div className="pt-2 border-t border-rose-200/60 flex flex-col gap-2">
                   <button
@@ -565,7 +669,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
           <div className="flex items-center my-3">
             <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink mx-4 text-[11px] font-bold text-slate-500 uppercase">or with email</span>
+            <span className="flex-shrink mx-4 text-[11px] font-bold text-slate-500 uppercase">or with credentials</span>
             <div className="flex-grow border-t border-slate-200"></div>
           </div>
 
@@ -639,9 +743,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
             </div>
 
             <div>
-              <label className="block text-[11px] font-extrabold text-slate-700 uppercase tracking-wider mb-1">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-extrabold text-slate-700 uppercase tracking-wider">
+                  Password
+                </label>
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading}
+                    className="text-[10px] font-bold text-sky-600 hover:text-sky-800 hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                 <input
@@ -671,6 +787,31 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
               )}
             </button>
           </form>
+
+          {/* Quick Demo Mode Instant Login */}
+          <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
+            <p className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 text-center">
+              Instant One-Click Demo Mode
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin('doctor')}
+                className="py-2 px-2.5 bg-slate-50 hover:bg-sky-50 border border-slate-200 hover:border-sky-200 text-slate-700 hover:text-sky-700 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5"
+              >
+                <Stethoscope className="w-3.5 h-3.5 text-sky-600" />
+                <span>Doctor Demo</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin('assistant')}
+                className="py-2 px-2.5 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 text-slate-700 hover:text-emerald-700 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5"
+              >
+                <User className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Assistant Demo</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

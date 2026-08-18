@@ -17,7 +17,8 @@ import {
   QueryDocumentSnapshot,
   DocumentData
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
+import { db, auth, handleFirestoreError, OperationType } from './firebase';
+import { signInAnonymously } from 'firebase/auth';
 import {
   Patient,
   Appointment,
@@ -660,6 +661,7 @@ export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserP
   const cleanRaw = identifier.trim();
   const cleanLower = cleanRaw.toLowerCase();
   const digitsOnly = cleanRaw.replace(/\D/g, '');
+  const last9Digits = digitsOnly.length >= 9 ? digitsOnly.slice(-9) : digitsOnly;
 
   // 1. Check local storage cache first
   try {
@@ -670,7 +672,7 @@ export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserP
         const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
         const uEmailLower = (u.email || '').toLowerCase();
         return (
-          (digitsOnly && uPhoneDigits === digitsOnly) ||
+          (digitsOnly && (uPhoneDigits === digitsOnly || (last9Digits && uPhoneDigits.endsWith(last9Digits)))) ||
           (uEmailLower && uEmailLower === cleanLower) ||
           (digitsOnly && uEmailLower === `${digitsOnly}@clinicpro.local`)
         );
@@ -688,14 +690,14 @@ export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserP
             const uPhoneDigits = (item.phone || '').replace(/\D/g, '');
             const uEmailLower = (item.email || '').toLowerCase();
             if (
-              (digitsOnly && uPhoneDigits === digitsOnly) ||
+              (digitsOnly && (uPhoneDigits === digitsOnly || (last9Digits && uPhoneDigits.endsWith(last9Digits)))) ||
               (uEmailLower && uEmailLower === cleanLower) ||
               (digitsOnly && uEmailLower === `${digitsOnly}@clinicpro.local`)
             ) {
               return item as UserProfile;
             }
           }
-        } catch (e) {
+        } catch {
           // ignore item parse error
         }
       }
@@ -704,7 +706,16 @@ export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserP
     console.warn('localStorage staff search note:', e);
   }
 
-  // 2. Query Firestore users collection
+  // 2. Ensure auth session for Firestore query if needed
+  if (!auth.currentUser) {
+    try {
+      await signInAnonymously(auth);
+    } catch (anonErr) {
+      console.warn('Anonymous auth in staff lookup note:', anonErr);
+    }
+  }
+
+  // 3. Query Firestore users collection
   try {
     // A. Query by exact email
     const qEmail = query(collection(db, 'users'), where('email', '==', cleanLower));
@@ -733,6 +744,16 @@ export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserP
         return { ...data, uid: snapPhone.docs[0].id };
       }
 
+      // Query by clean raw phone
+      if (cleanRaw !== digitsOnly) {
+        const qRawPhone = query(collection(db, 'users'), where('phone', '==', cleanRaw));
+        const snapRawPhone = await getDocs(qRawPhone);
+        if (!snapRawPhone.empty) {
+          const data = snapRawPhone.docs[0].data() as UserProfile;
+          return { ...data, uid: snapRawPhone.docs[0].id };
+        }
+      }
+
       // Query by standard clinicpro generated local email: {digits}@clinicpro.local
       const qLocalEmail = query(
         collection(db, 'users'),
@@ -742,6 +763,22 @@ export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserP
       if (!snapLocalEmail.empty) {
         const data = snapLocalEmail.docs[0].data() as UserProfile;
         return { ...data, uid: snapLocalEmail.docs[0].id };
+      }
+    }
+
+    // D. Scan all assistants in users collection as a fallback
+    const qAllAssistants = query(collection(db, 'users'), where('role', '==', 'assistant'));
+    const snapAssistants = await getDocs(qAllAssistants);
+    for (const d of snapAssistants.docs) {
+      const u = d.data() as UserProfile;
+      const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
+      const uEmailLower = (u.email || '').toLowerCase();
+      if (
+        (digitsOnly && (uPhoneDigits === digitsOnly || (last9Digits && uPhoneDigits.endsWith(last9Digits)))) ||
+        (uEmailLower && uEmailLower === cleanLower) ||
+        (digitsOnly && uEmailLower === `${digitsOnly}@clinicpro.local`)
+      ) {
+        return { ...u, uid: d.id };
       }
     }
   } catch (err) {

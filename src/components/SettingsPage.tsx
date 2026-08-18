@@ -269,20 +269,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-2xl font-black text-slate-900  tracking-tight">
               Clinic & SaaS Settings
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-400">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-100 text-sky-800  ">
               Doctor Control
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500  mt-1">
             Manage reception assistants, custom WhatsApp templates, CSV exports, and offline security.
           </p>
         </div>
 
         {savedAlert && (
-          <div className="px-4 py-2 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-1.5 animate-in fade-in">
+          <div className="px-4 py-2 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-600  text-xs font-bold flex items-center gap-1.5 animate-in fade-in">
             <CheckCircle2 className="w-4 h-4" />
             Changes Saved Successfully!
           </div>
@@ -290,13 +290,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       </div>
 
       {/* Navigation Tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-6 gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+      <div className="grid grid-cols-2 sm:grid-cols-6 gap-1.5 p-1 bg-slate-100  rounded-2xl border border-slate-200 ">
         <button
           onClick={() => setActiveTab('profile')}
           className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-[44px] ${
             activeTab === 'profile'
-              ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-white  text-sky-600  shadow-sm'
+              : 'text-slate-600  hover:text-slate-900 :text-white'
           }`}
         >
           <Settings className="w-3.5 h-3.5" />
@@ -307,8 +307,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           onClick={() => setActiveTab('procedures')}
           className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-[44px] ${
             activeTab === 'procedures'
-              ? 'bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-white  text-teal-600  shadow-sm'
+              : 'text-slate-600  hover:text-slate-900 :text-white'
           }`}
         >
           <Tag className="w-3.5 h-3.5" />
@@ -319,8 +319,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           onClick={() => setActiveTab('assistants')}
           className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-[44px] ${
             activeTab === 'assistants'
-              ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-white  text-indigo-600  shadow-sm'
+              : 'text-slate-600  hover:text-slate-900 :text-white'
           }`}
         >
           <Users className="w-3.5 h-3.5" />
@@ -331,8 +331,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           onClick={() => setActiveTab('whatsapp')}
           className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-[44px] ${
             activeTab === 'whatsapp'
-              ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-white  text-emerald-600  shadow-sm'
+              : 'text-slate-600  hover:text-slate-900 :text-white'
           }`}
         >
           <MessageSquare className="w-3.5 h-3.5" />
@@ -343,8 +343,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           onClick={() => setActiveTab('export')}
           className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-[44px] ${
             activeTab === 'export'
-              ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-white  text-amber-600  shadow-sm'
+              : 'text-slate-600  hover:text-slate-900 :text-white'
           }`}
         >
           <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -355,8 +355,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           onClick={() => setActiveTab('terms')}
           className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-h-[44px] ${
             activeTab === 'terms'
-              ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-white  text-rose-600  shadow-sm'
+              : 'text-slate-600  hover:text-slate-900 :text-white'
           }`}
         >
           <ShieldCheck className="w-3.5 h-3.5" />
@@ -368,19 +368,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       {/* TAB: PROCEDURES CATALOG & PRICING                  */}
       {/* ================================================= */}
       {activeTab === 'procedures' && (
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div className="bg-white  p-6 rounded-3xl border border-slate-200  shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100  pb-4">
             <div>
               <div className="flex items-center gap-2">
                 <Tag className="w-5 h-5 text-teal-600" />
-                <h2 className="font-bold text-slate-900 dark:text-white text-base">
+                <h2 className="font-bold text-slate-900  text-base">
                   Procedures & Pricing Catalog
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-teal-50 text-teal-700  ">
                   {catalog.length} Services
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <p className="text-xs text-slate-500  mt-1">
                 Define standard services and default prices in EGP. These automatically populate dental charting with full manual price override.
               </p>
             </div>
@@ -389,7 +389,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               <button
                 type="button"
                 onClick={handleResetDefaultCatalog}
-                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5 transition-colors"
+                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600  hover:bg-slate-100 :bg-slate-800 flex items-center gap-1.5 transition-colors"
                 title="Reset to standard dental template"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -407,29 +407,29 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
 
           {/* Add New Procedure Form */}
-          <form onSubmit={handleAddProcedure} className="p-4 rounded-2xl bg-teal-50/50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/40 space-y-3">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-teal-900 dark:text-teal-300 flex items-center gap-1.5">
+          <form onSubmit={handleAddProcedure} className="p-4 rounded-2xl bg-teal-50/50  border border-teal-100  space-y-3">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-teal-900  flex items-center gap-1.5">
               <Plus className="w-4 h-4" /> Add New Procedure to Catalog
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Procedure Name *</label>
+                <label className="text-[11px] font-bold text-slate-600 ">Procedure Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Laser Gingivectomy"
                   value={newProcName}
                   onChange={(e) => setNewProcName(e.target.value)}
-                  className="w-full mt-1 p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium text-xs focus:outline-none focus:border-teal-500"
+                  className="w-full mt-1 p-2.5 rounded-xl bg-white  border border-slate-200  text-slate-900  font-medium text-xs focus:outline-none focus:border-teal-500"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Category</label>
+                <label className="text-[11px] font-bold text-slate-600 ">Category</label>
                 <select
                   value={newProcCategory}
                   onChange={(e) => setNewProcCategory(e.target.value)}
-                  className="w-full mt-1 p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-medium text-xs focus:outline-none focus:border-teal-500"
+                  className="w-full mt-1 p-2.5 rounded-xl bg-white  border border-slate-200  text-slate-900  font-medium text-xs focus:outline-none focus:border-teal-500"
                 >
                   <option value="General">General / Consultation</option>
                   <option value="Restorative">Restorative / Fillings</option>
@@ -446,7 +446,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Default Price (EGP) *</label>
+                <label className="text-[11px] font-bold text-slate-600 ">Default Price (EGP) *</label>
                 <div className="flex gap-2 mt-1">
                   <input
                     type="number"
@@ -456,7 +456,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     placeholder="e.g. 1200"
                     value={newProcPrice}
                     onChange={(e) => setNewProcPrice(e.target.value)}
-                    className="flex-1 p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-bold font-mono text-xs focus:outline-none focus:border-teal-500"
+                    className="flex-1 p-2.5 rounded-xl bg-white  border border-slate-200  text-slate-900  font-bold font-mono text-xs focus:outline-none focus:border-teal-500"
                   />
                   <button
                     type="submit"
@@ -471,21 +471,21 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
           {/* Search bar */}
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search catalog by procedure name or category..."
               value={procedureSearch}
               onChange={(e) => setProcedureSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-teal-500"
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50  border border-slate-200  rounded-xl text-xs font-medium text-slate-900  focus:outline-none focus:border-teal-500"
             />
           </div>
 
           {/* Catalog Items Table */}
-          <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+          <div className="border border-slate-200  rounded-2xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
-                <thead className="bg-slate-50 dark:bg-slate-950 font-bold uppercase text-[10px] text-slate-500 border-b border-slate-200 dark:border-slate-800">
+              <table className="w-full text-left text-xs text-slate-700 ">
+                <thead className="bg-slate-50  font-bold uppercase text-[10px] text-slate-500 border-b border-slate-200 ">
                   <tr>
                     <th className="p-3.5">Procedure Name</th>
                     <th className="p-3.5">Category</th>
@@ -493,7 +493,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     <th className="p-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-slate-100 ">
                   {catalog
                     .filter((p) => {
                       const q = procedureSearch.toLowerCase();
@@ -505,14 +505,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     .map((item) => {
                       const isEditing = editingProcId === item.id;
                       return (
-                        <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
-                          <td className="p-3.5 font-bold text-slate-900 dark:text-white">
+                        <tr key={item.id} className="hover:bg-slate-50/70 :bg-slate-800/40 transition-colors">
+                          <td className="p-3.5 font-bold text-slate-900 ">
                             {isEditing ? (
                               <input
                                 type="text"
                                 value={editName}
                                 onChange={(e) => setEditName(e.target.value)}
-                                className="p-1.5 rounded-lg border border-teal-500 bg-white dark:bg-slate-950 text-xs w-full font-bold"
+                                className="p-1.5 rounded-lg border border-teal-500 bg-white  text-xs w-full font-bold"
                               />
                             ) : (
                               item.name
@@ -524,10 +524,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                 type="text"
                                 value={editCategory}
                                 onChange={(e) => setEditCategory(e.target.value)}
-                                className="p-1.5 rounded-lg border border-teal-500 bg-white dark:bg-slate-950 text-xs w-full"
+                                className="p-1.5 rounded-lg border border-teal-500 bg-white  text-xs w-full"
                               />
                             ) : (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100  text-slate-600 ">
                                 {item.category || 'General'}
                               </span>
                             )}
@@ -540,10 +540,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                 step="any"
                                 value={editPrice}
                                 onChange={(e) => setEditPrice(e.target.value)}
-                                className="p-1.5 rounded-lg border border-teal-500 bg-white dark:bg-slate-950 text-xs w-28 font-mono font-bold text-emerald-600"
+                                className="p-1.5 rounded-lg border border-teal-500 bg-white  text-xs w-28 font-mono font-bold text-emerald-600"
                               />
                             ) : (
-                              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                              <span className="font-mono font-bold text-emerald-600  text-sm">
                                 {item.defaultPrice.toLocaleString()} EGP
                               </span>
                             )}
@@ -562,7 +562,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => setEditingProcId(null)}
-                                    className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs"
+                                    className="px-2.5 py-1 rounded-lg bg-slate-200  text-slate-700  font-bold text-xs"
                                   >
                                     Cancel
                                   </button>
@@ -572,7 +572,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleStartEdit(item)}
-                                    className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-colors"
+                                    className="p-1.5 rounded-lg text-slate-500 hover:text-teal-600 hover:bg-teal-50 :bg-teal-950/30 transition-colors"
                                     title="Edit procedure"
                                   >
                                     <Edit3 className="w-4 h-4" />
@@ -580,7 +580,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteProcedure(item.id)}
-                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 :bg-rose-950/30 transition-colors"
                                     title="Delete from catalog"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -603,57 +603,57 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       {/* TAB 1: CLINIC PROFILE & BRANDING                   */}
       {/* ================================================= */}
       {activeTab === 'profile' && (
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+        <div className="bg-white  p-6 rounded-3xl border border-slate-200  shadow-sm space-y-6">
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Clinic Name *</label>
+                <label className="text-xs font-bold text-slate-700 ">Clinic Name *</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white font-bold text-sm"
+                  className="w-full p-3.5 rounded-2xl bg-white  border border-slate-300  text-slate-900  font-bold text-sm"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Chief Doctor Name *</label>
+                <label className="text-xs font-bold text-slate-700 ">Chief Doctor Name *</label>
                 <input
                   type="text"
                   required
                   value={doctorName}
                   onChange={(e) => setDoctorName(e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white font-bold text-sm"
+                  className="w-full p-3.5 rounded-2xl bg-white  border border-slate-300  text-slate-900  font-bold text-sm"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Clinic Phone *</label>
+                <label className="text-xs font-bold text-slate-700 ">Clinic Phone *</label>
                 <input
                   type="text"
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white font-mono text-sm"
+                  className="w-full p-3.5 rounded-2xl bg-white  border border-slate-300  text-slate-900  font-mono text-sm"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Address *</label>
+                <label className="text-xs font-bold text-slate-700 ">Address *</label>
                 <input
                   type="text"
                   required
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm"
+                  className="w-full p-3.5 rounded-2xl bg-white  border border-slate-300  text-slate-900  text-sm"
                 />
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+            <div className="pt-4 border-t border-slate-100  flex justify-end">
               <button
                 type="submit"
                 className="px-6 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white text-sm font-bold shadow-md active:scale-95 transition-all min-h-[48px]"
@@ -670,15 +670,28 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       {/* ================================================= */}
       {activeTab === 'assistants' && (
         <div className="space-y-6">
+          {/* Quick Login Guide Banner */}
+          <div className="p-4 rounded-3xl bg-indigo-50 border border-indigo-100 flex items-start gap-3.5">
+            <div className="w-8 h-8 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 text-xs font-black shadow-sm">
+              ℹ️
+            </div>
+            <div className="space-y-1 text-xs text-indigo-950">
+              <h3 className="font-extrabold text-indigo-900 text-sm">How Reception Assistants Sign In</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Assistants do not need to register a new account. On the ClinicPro login screen, they simply select <strong>Sign In</strong>, type their registered <strong>Phone Number</strong> (e.g. <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-indigo-200 text-indigo-700">0123456789</code>) in the login field, and enter their <strong>Initial Password</strong>.
+              </p>
+            </div>
+          </div>
+
           {/* Add Assistant Card */}
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex items-center gap-2 border-b border-slate-100  pb-3">
               <UserPlus className="w-5 h-5 text-indigo-500" />
-              <h2 className="font-bold text-slate-900 dark:text-white text-base">Add New Reception Assistant</h2>
+              <h2 className="font-bold text-slate-900  text-base">Add New Reception Assistant</h2>
             </div>
 
             {assistantSuccess && (
-              <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2">
+              <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-600  text-xs font-bold flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4" />
                 {assistantSuccess}
               </div>
@@ -686,38 +699,38 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
             <form onSubmit={handleCreateAssistant} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Assistant Name</label>
+                <label className="text-xs font-semibold text-slate-700 ">Assistant Name</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Sara Ali"
                   value={assistantName}
                   onChange={(e) => setAssistantName(e.target.value)}
-                  className="w-full mt-1 p-3 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm min-h-[44px]"
+                  className="w-full mt-1 p-3 rounded-2xl bg-white  border border-slate-300  text-slate-900  text-sm min-h-[44px]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Phone Number (Login)</label>
+                <label className="text-xs font-semibold text-slate-700 ">Phone Number (Login)</label>
                 <input
                   type="tel"
                   required
                   placeholder="010XXXXXXXX"
                   value={assistantPhone}
                   onChange={(e) => setAssistantPhone(e.target.value)}
-                  className="w-full mt-1 p-3 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-mono min-h-[44px]"
+                  className="w-full mt-1 p-3 rounded-2xl bg-white  border border-slate-300  text-slate-900  text-sm font-mono min-h-[44px]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Initial Password</label>
+                <label className="text-xs font-semibold text-slate-700 ">Initial Password</label>
                 <input
                   type="text"
                   required
                   placeholder="••••••••"
                   value={assistantPassword}
                   onChange={(e) => setAssistantPassword(e.target.value)}
-                  className="w-full mt-1 p-3 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-mono min-h-[44px]"
+                  className="w-full mt-1 p-3 rounded-2xl bg-white  border border-slate-300  text-slate-900  text-sm font-mono min-h-[44px]"
                 />
               </div>
 
@@ -734,25 +747,25 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
 
           {/* Assistants List */}
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+          <div className="bg-white  p-6 rounded-3xl border border-slate-200  shadow-sm space-y-4">
+            <h3 className="font-bold text-slate-900  text-sm">
               Active Clinic Assistants ({assistants.length})
             </h3>
 
             {assistants.length > 0 ? (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              <div className="divide-y divide-slate-100 ">
                 {assistants.map((ast) => (
                   <div key={ast.uid} className="py-3.5 flex items-center justify-between gap-3">
                     <div className="space-y-0.5">
-                      <div className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                      <div className="font-bold text-slate-900  text-sm flex items-center gap-2">
                         {ast.name}
                         {ast.disabled && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700  ">
                             Disabled
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-slate-400 flex items-center gap-3">
+                      <div className="text-xs text-slate-500 flex items-center gap-3">
                         <span className="font-mono">{ast.phone || ast.email}</span>
                         {ast.initialPassword && (
                           <span>• Password: <span className="font-mono text-indigo-500 font-bold">{ast.initialPassword}</span></span>
@@ -766,8 +779,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                           onClick={() => onToggleAssistantStatus(ast)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                             ast.disabled
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                              : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                              ? 'bg-emerald-100 text-emerald-700  '
+                              : 'bg-slate-100 text-slate-700  '
                           }`}
                         >
                           {ast.disabled ? 'Enable' : 'Disable'}
@@ -777,7 +790,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                       {onDeleteAssistant && (
                         <button
                           onClick={() => onDeleteAssistant(ast.uid)}
-                          className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                          className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 :bg-rose-950/40 transition-colors"
                           title="Delete Assistant"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -788,7 +801,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 ))}
               </div>
             ) : (
-              <div className="p-8 text-center text-slate-400 text-xs">
+              <div className="p-8 text-center text-slate-500 text-xs">
                 No reception assistants registered yet. Use the form above to add your staff.
               </div>
             )}
@@ -800,10 +813,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       {/* TAB 3: WHATSAPP TEMPLATE EDITOR                    */}
       {/* ================================================= */}
       {activeTab === 'whatsapp' && (
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+        <div className="bg-white  p-6 rounded-3xl border border-slate-200  shadow-sm space-y-6">
           <div>
-            <h2 className="font-bold text-slate-900 dark:text-white text-base">Default WhatsApp Reminder Template</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <h2 className="font-bold text-slate-900  text-base">Default WhatsApp Reminder Template</h2>
+            <p className="text-xs text-slate-500  mt-0.5">
               Customize the message template sent to patients. Insert dynamic tags by tapping the pills below.
             </p>
           </div>
@@ -821,7 +834,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 key={tag}
                 type="button"
                 onClick={() => insertPlaceholder(tag)}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all active:scale-95"
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200  :bg-slate-700 text-slate-700  text-xs font-bold transition-all active:scale-95"
               >
                 {label}
               </button>
@@ -832,14 +845,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             rows={7}
             value={whatsappTemplate}
             onChange={(e) => setWhatsappTemplate(e.target.value)}
-            className="w-full p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white font-mono text-sm leading-relaxed outline-none focus:border-emerald-500"
+            className="w-full p-4 rounded-2xl bg-white  border border-slate-300  text-slate-900  font-mono text-sm leading-relaxed outline-none focus:border-emerald-500"
           />
 
-          <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 space-y-2">
-            <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+          <div className="p-4 rounded-2xl bg-emerald-50  border border-emerald-200  space-y-2">
+            <span className="text-xs font-bold text-emerald-800  flex items-center gap-1.5">
               <Sparkles className="w-4 h-4" /> Live Message Preview:
             </span>
-            <div className="text-xs font-mono text-slate-700 dark:text-slate-300 whitespace-pre-line bg-white dark:bg-slate-950 p-3.5 rounded-xl border border-emerald-100 dark:border-emerald-900/40">
+            <div className="text-xs font-mono text-slate-700  whitespace-pre-line bg-white  p-3.5 rounded-xl border border-emerald-100 ">
               {whatsappTemplate
                 .replace(/\[PatientName\]/g, 'أحمد محمود')
                 .replace(/\[Date\]/g, '2026-08-15')
@@ -865,19 +878,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       {/* TAB 4: DATA EXPORT (EXCEL/CSV)                     */}
       {/* ================================================= */}
       {activeTab === 'export' && (
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+        <div className="bg-white  p-6 rounded-3xl border border-slate-200  shadow-sm space-y-6">
           <div>
-            <h2 className="font-bold text-slate-900 dark:text-white text-base">One-Click CSV / Excel Export</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <h2 className="font-bold text-slate-900  text-base">One-Click CSV / Excel Export</h2>
+            <p className="text-xs text-slate-500  mt-0.5">
               Export your clinical patient records and appointment ledger to standard CSV files compatible with Excel.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
+            <div className="p-5 rounded-2xl bg-slate-50  border border-slate-200  space-y-3">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-sky-600" />
-                <h3 className="font-bold text-slate-900 dark:text-white text-sm">Patients Registry</h3>
+                <h3 className="font-bold text-slate-900  text-sm">Patients Registry</h3>
               </div>
               <p className="text-xs text-slate-500">
                 Total {patients.length} registered patients, medical alerts, contact numbers, and outstanding debts.
@@ -891,10 +904,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               </button>
             </div>
 
-            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
+            <div className="p-5 rounded-2xl bg-slate-50  border border-slate-200  space-y-3">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-bold text-slate-900 dark:text-white text-sm">Appointments Ledger</h3>
+                <h3 className="font-bold text-slate-900  text-sm">Appointments Ledger</h3>
               </div>
               <p className="text-xs text-slate-500">
                 Total {appointments.length} historical and upcoming scheduled visits with procedure breakdown.
@@ -915,22 +928,22 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       {/* TAB 5: TERMS & CONDITIONS & OFFLINE SAFETY         */}
       {/* ================================================= */}
       {activeTab === 'terms' && (
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+        <div className="bg-white  p-6 rounded-3xl border border-slate-200  shadow-sm space-y-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-rose-100 dark:bg-rose-950/50 text-rose-600 rounded-2xl">
+            <div className="p-3 bg-rose-100  text-rose-600 rounded-2xl">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900 dark:text-white text-base">
+              <h2 className="font-bold text-slate-900  text-base">
                 Terms of Service & Offline Data Protection
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-500 ">
                 IndexedDB Local Storage & Clinic Responsibility Notice
               </p>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-xs text-rose-900 dark:text-rose-300 space-y-2 leading-relaxed">
+          <div className="p-4 rounded-2xl bg-rose-50  border border-rose-200  text-xs text-rose-900  space-y-2 leading-relaxed">
             <div className="font-bold flex items-center gap-1.5 text-sm">
               <AlertTriangle className="w-4 h-4 text-rose-600" />
               IMPORTANT CACHE RETENTION NOTICE (تنبيه هام):
@@ -943,8 +956,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             </p>
           </div>
 
-          <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            <h4 className="font-bold text-slate-900 dark:text-white">Recommended Clinic Procedures:</h4>
+          <div className="space-y-3 text-xs text-slate-600  leading-relaxed">
+            <h4 className="font-bold text-slate-900 ">Recommended Clinic Procedures:</h4>
             <ul className="list-disc pl-5 space-y-1">
               <li>Always connect the clinic PC or iPad to internet at least once at the end of the day to sync all records.</li>
               <li>Do not use Private / Incognito browsing tabs for official clinic data entry.</li>

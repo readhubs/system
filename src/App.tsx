@@ -596,6 +596,7 @@ export default function App() {
       role: 'assistant',
       clinicId: cid,
       initialPassword: pass,
+      password: pass,
       disabled: false,
       permissions: {
         viewPatients: true,

@@ -11,9 +11,7 @@ export interface PptxExportOptions {
 
 /**
  * Generates and downloads a clinical presentation file (.pptx)
- * Slide 1: Patient Overview & Medical Profile
- * Slide 2: Odontogram & Dental Condition Summary
- * Subsequent Slides: Dedicated diagnostic slides for each X-ray, Intraoral photo, and scan
+ * Perfect 16:9 widescreen layout with dynamic pagination and boundary constraints.
  */
 export async function exportPatientFileToPptx({
   patient,
@@ -24,70 +22,72 @@ export async function exportPatientFileToPptx({
 }: PptxExportOptions): Promise<void> {
   const pptx = new pptxgen();
 
-  // Configure widescreen 16:9 layout
-  pptx.layout = 'LAYOUT_16x9';
-  pptx.author = clinicSettings?.doctorName || 'ClinicPro Dental System';
-  pptx.company = clinicSettings?.name || 'ClinicPro Egypt';
-  pptx.title = `${patient.name} - Dental Clinical Record`;
+  // Configure standard widescreen 16:9 layout (13.33 x 7.5 inches)
+  pptx.defineLayout({ name: 'CLINIC_16_9', width: 13.33, height: 7.5 });
+  pptx.layout = 'CLINIC_16_9';
+  pptx.author = clinicSettings?.doctorName || 'Dental Practice Clinical System';
+  pptx.company = clinicSettings?.name || 'Dental Practice';
+  pptx.title = `${patient.name} - Dental Dossier`;
 
   const primaryColor = '0284C7'; // Sky 600
-  const darkBg = '0F172A'; // Slate 900
+  const headerBg = '0F172A'; // Slate 900
   const cardBg = 'F8FAFC'; // Slate 50
-  const textDark = '1E293B'; // Slate 800
-  const textMuted = '64748B'; // Slate 500
+  const textDark = '0F172A'; // Slate 900
+  const textMuted = '475569'; // Slate 600
   const alertRed = 'DC2626'; // Red 600
+  const successGreen = '16A34A'; // Green 600
 
   // -------------------------------------------------------------
-  // SLIDE 1: Patient Summary & Medical History
+  // SLIDE 1: Patient Overview & Medical Profile
   // -------------------------------------------------------------
   const slide1 = pptx.addSlide();
 
-  // Header Banner
+  // Top Banner
   slide1.addShape(pptx.ShapeType.rect, {
     x: 0,
     y: 0,
-    w: '100%',
-    h: 1.2,
+    w: 13.33,
+    h: 1.15,
     fill: { color: primaryColor }
   });
 
-  slide1.addText(clinicSettings?.name || 'ClinicPro Egypt Dental Center', {
+  slide1.addText(clinicSettings?.name || 'Dental Practice Medical Records', {
     x: 0.8,
-    y: 0.25,
-    w: 8.0,
-    h: 0.35,
-    fontSize: 14,
+    y: 0.18,
+    w: 11.5,
+    h: 0.3,
+    fontSize: 12,
     color: 'E0F2FE',
     bold: true
   });
 
-  slide1.addText(`PATIENT CLINICAL DOSSIER: ${patient.name.toUpperCase()}`, {
+  slide1.addText(`CLINICAL DOSSIER: ${patient.name.toUpperCase()}`, {
     x: 0.8,
-    y: 0.55,
+    y: 0.48,
     w: 11.5,
     h: 0.5,
-    fontSize: 22,
+    fontSize: 20,
     color: 'FFFFFF',
     bold: true
   });
 
-  // Patient Info Card (Left Column)
+  // Left Card: Demographics
   slide1.addShape(pptx.ShapeType.roundRect, {
     x: 0.8,
-    y: 1.6,
-    w: 5.5,
-    h: 5.2,
-    rectRadius: 0.15,
+    y: 1.35,
+    w: 5.6,
+    h: 5.65,
+    rectRadius: 0.1,
     fill: { color: cardBg },
     line: { color: 'CBD5E1', width: 1 }
   });
 
-  slide1.addText('General Demographics', {
+  slide1.addText('Patient Demographics & Status', {
     x: 1.1,
-    y: 1.8,
+    y: 1.5,
     w: 5.0,
     h: 0.35,
-    fontSize: 15,
+    fontSize: 14,
     bold: true,
     color: textDark
   });
@@ -95,14 +95,14 @@ export async function exportPatientFileToPptx({
   const demographicsRows = [
     [
       { text: 'Patient ID', options: { bold: true, color: textMuted } },
-      { text: patient.id, options: { bold: true, color: textDark } }
+      { text: patient.id.slice(0, 16), options: { bold: true, color: textDark } }
     ],
     [
       { text: 'Full Name', options: { bold: true, color: textMuted } },
       { text: patient.name, options: { bold: true, color: primaryColor } }
     ],
     [
-      { text: 'Phone Number', options: { bold: true, color: textMuted } },
+      { text: 'Phone', options: { bold: true, color: textMuted } },
       { text: patient.phone || 'N/A', options: { color: textDark } }
     ],
     [
@@ -120,41 +120,41 @@ export async function exportPatientFileToPptx({
     [
       { text: 'Account Balance', options: { bold: true, color: textMuted } },
       {
-        text: patient.balance > 0 ? `${patient.balance.toLocaleString()} EGP (Due)` : '0 EGP (Settled)',
-        options: { bold: true, color: patient.balance > 0 ? alertRed : '16A34A' }
+        text: patient.balance > 0 ? `${patient.balance.toLocaleString()} EGP (Outstanding Due)` : '0 EGP (Settled)',
+        options: { bold: true, color: patient.balance > 0 ? alertRed : successGreen }
       }
     ]
   ];
 
   slide1.addTable(demographicsRows, {
     x: 1.1,
-    y: 2.3,
-    w: 4.9,
-    h: 4.2,
-    colW: [1.8, 3.1],
+    y: 2.0,
+    w: 5.0,
+    h: 4.6,
+    colW: [1.8, 3.2],
     rowH: 0.45,
-    fontSize: 11,
+    fontSize: 10.5,
     fill: { color: cardBg },
     border: { pt: 0.5, color: 'E2E8F0' }
   });
 
-  // Medical History & Clinical Notes Card (Right Column)
+  // Right Card: Medical History & Clinical Directives
   slide1.addShape(pptx.ShapeType.roundRect, {
     x: 6.7,
-    y: 1.6,
+    y: 1.35,
     w: 5.8,
-    h: 5.2,
-    rectRadius: 0.15,
+    h: 5.65,
+    rectRadius: 0.1,
     fill: { color: cardBg },
     line: { color: 'CBD5E1', width: 1 }
   });
 
-  slide1.addText('Medical Alerts & Systemic Conditions', {
+  slide1.addText('Medical Alerts & Systemic Contraindications', {
     x: 7.0,
-    y: 1.8,
+    y: 1.5,
     w: 5.2,
     h: 0.35,
-    fontSize: 15,
+    fontSize: 13,
     bold: true,
     color: alertRed
   });
@@ -166,32 +166,32 @@ export async function exportPatientFileToPptx({
 
   slide1.addText(alertsText, {
     x: 7.0,
-    y: 2.25,
+    y: 1.95,
     w: 5.2,
-    h: 1.0,
-    fontSize: 11,
+    h: 0.9,
+    fontSize: 10,
     bold: Boolean(patient.medicalAlerts?.length),
     color: patient.medicalAlerts?.length ? alertRed : textMuted,
     fill: { color: patient.medicalAlerts?.length ? 'FEE2E2' : 'F1F5F9' },
-    margin: 8
+    margin: 6
   });
 
-  slide1.addText('Clinical Notes & Treatment Directives', {
+  slide1.addText('Clinical Directives & Treatment Directives', {
     x: 7.0,
-    y: 3.5,
+    y: 3.1,
     w: 5.2,
-    h: 0.35,
-    fontSize: 14,
+    h: 0.3,
+    fontSize: 13,
     bold: true,
     color: textDark
   });
 
   slide1.addText(patient.medicalNotes || 'No specific clinical notes entered yet.', {
     x: 7.0,
-    y: 3.95,
+    y: 3.45,
     w: 5.2,
-    h: 2.5,
-    fontSize: 11,
+    h: 3.3,
+    fontSize: 10,
     color: textDark,
     margin: 8,
     fill: { color: 'FFFFFF' },
@@ -199,29 +199,8 @@ export async function exportPatientFileToPptx({
   });
 
   // -------------------------------------------------------------
-  // SLIDE 2: Odontogram & Dental Condition Summary
+  // SLIDE 2: Odontogram Condition Summary & Procedures (Paginated)
   // -------------------------------------------------------------
-  const slide2 = pptx.addSlide();
-
-  slide2.addShape(pptx.ShapeType.rect, {
-    x: 0,
-    y: 0,
-    w: '100%',
-    h: 1.0,
-    fill: { color: '1E293B' }
-  });
-
-  slide2.addText('DENTAL CHART & ODONTOGRAM MAPPING', {
-    x: 0.8,
-    y: 0.25,
-    w: 11.5,
-    h: 0.5,
-    fontSize: 20,
-    color: 'FFFFFF',
-    bold: true
-  });
-
-  // Tooth status counter summary
   const toothEntries = Object.entries(patient.toothStatus || {});
   const treatedCount = toothEntries.filter(([_, s]) => s === 'treated').length;
   const needsCount = toothEntries.filter(([_, s]) => s === 'needs-treatment').length;
@@ -230,115 +209,211 @@ export async function exportPatientFileToPptx({
   const crownCount = toothEntries.filter(([_, s]) => s === 'crown').length;
 
   const statBoxes = [
-    { label: 'Treated / Restored', count: treatedCount, color: '16A34A' },
-    { label: 'Needs Treatment', count: needsCount, color: 'DC2626' },
-    { label: 'Endodontic / RCT', count: endoCount, color: '9333EA' },
-    { label: 'Prosthetic Crown', count: crownCount, color: 'EA580C' },
-    { label: 'Extracted / Missing', count: extractedCount, color: '64748B' }
+    { label: 'Treated / Restored', count: treatedCount, color: successGreen },
+    { label: 'Needs Treatment', count: needsCount, color: alertRed },
+    { label: 'Endodontic / RCT', count: endoCount, color: '0D9488' },
+    { label: 'Prosthetic Crown', count: crownCount, color: '9333EA' },
+    { label: 'Extracted / Missing', count: extractedCount, color: '475569' }
   ];
 
-  statBoxes.forEach((b, idx) => {
-    const boxW = 2.15;
-    const boxX = 0.8 + idx * (boxW + 0.22);
-    slide2.addShape(pptx.ShapeType.roundRect, {
-      x: boxX,
-      y: 1.3,
-      w: boxW,
-      h: 1.1,
-      rectRadius: 0.1,
-      fill: { color: cardBg },
-      line: { color: b.color, width: 2 }
+  // Chunk procedures into pages of 7 rows to avoid any vertical overflow
+  const ROWS_PER_PAGE = 7;
+  const procedureChunks = [];
+  if (toothRecords.length === 0) {
+    procedureChunks.push([]);
+  } else {
+    for (let i = 0; i < toothRecords.length; i += ROWS_PER_PAGE) {
+      procedureChunks.push(toothRecords.slice(i, i + ROWS_PER_PAGE));
+    }
+  }
+
+  procedureChunks.forEach((chunk, pageIndex) => {
+    const slide = pptx.addSlide();
+
+    // Header
+    slide.addShape(pptx.ShapeType.rect, {
+      x: 0,
+      y: 0,
+      w: 13.33,
+      h: 0.95,
+      fill: { color: headerBg }
     });
 
-    slide2.addText(`${b.count}`, {
-      x: boxX,
-      y: 1.4,
-      w: boxW,
-      h: 0.5,
-      fontSize: 22,
-      bold: true,
-      color: b.color,
-      align: 'center'
+    slide.addText(
+      pageIndex === 0
+        ? `ODONTOGRAM SUMMARY & CLINICAL PROCEDURES - ${patient.name.toUpperCase()}`
+        : `CLINICAL PROCEDURES HISTORY (PAGE ${pageIndex + 1}) - ${patient.name.toUpperCase()}`,
+      {
+        x: 0.8,
+        y: 0.25,
+        w: 11.5,
+        h: 0.45,
+        fontSize: 18,
+        color: 'FFFFFF',
+        bold: true
+      }
+    );
+
+    let startTableY = 1.25;
+
+    // On the first page, display the top 5 stats badges
+    if (pageIndex === 0) {
+      statBoxes.forEach((b, idx) => {
+        const boxW = 2.15;
+        const boxX = 0.8 + idx * (boxW + 0.22);
+        slide.addShape(pptx.ShapeType.roundRect, {
+          x: boxX,
+          y: 1.15,
+          w: boxW,
+          h: 0.95,
+          rectRadius: 0.08,
+          fill: { color: cardBg },
+          line: { color: b.color, width: 1.5 }
+        });
+
+        slide.addText(`${b.count}`, {
+          x: boxX,
+          y: 1.22,
+          w: boxW,
+          h: 0.45,
+          fontSize: 18,
+          bold: true,
+          color: b.color,
+          align: 'center'
+        });
+
+        slide.addText(b.label, {
+          x: boxX,
+          y: 1.65,
+          w: boxW,
+          h: 0.35,
+          fontSize: 8.5,
+          bold: true,
+          color: textMuted,
+          align: 'center'
+        });
+      });
+
+      startTableY = 2.35;
+    }
+
+    // Table Header
+    const tableHeader = [
+      { text: 'Tooth #', options: { bold: true, color: 'FFFFFF', fill: { color: primaryColor } } },
+      { text: 'Procedure Name', options: { bold: true, color: 'FFFFFF', fill: { color: primaryColor } } },
+      { text: 'Date', options: { bold: true, color: 'FFFFFF', fill: { color: primaryColor } } },
+      { text: 'Status', options: { bold: true, color: 'FFFFFF', fill: { color: primaryColor } } },
+      { text: 'Fee (EGP)', options: { bold: true, color: 'FFFFFF', fill: { color: primaryColor } } },
+      { text: 'Performing Doctor', options: { bold: true, color: 'FFFFFF', fill: { color: primaryColor } } }
+    ];
+
+    const procedureRows =
+      chunk.length > 0
+        ? chunk.map((r) => [
+            { text: `#${r.toothNumber}`, options: { bold: true, color: primaryColor } },
+            { text: r.procedureName, options: { bold: true } },
+            { text: r.date || '-' },
+            {
+              text: r.status.toUpperCase(),
+              options: { color: r.status === 'completed' ? successGreen : 'D97706', bold: true }
+            },
+            { text: `${(r.cost || 0).toLocaleString()}`, options: { bold: true } },
+            { text: r.performingDoctorName || clinicSettings?.doctorName || 'Doctor' }
+          ])
+        : [
+            [
+              { text: '-' },
+              { text: 'No procedures logged yet for this patient.' },
+              { text: '-' },
+              { text: '-' },
+              { text: '-' },
+              { text: '-' }
+            ]
+          ];
+
+    slide.addTable([tableHeader, ...procedureRows], {
+      x: 0.8,
+      y: startTableY,
+      w: 11.7,
+      h: pageIndex === 0 ? 4.7 : 5.8,
+      colW: [1.2, 4.3, 1.5, 1.5, 1.4, 1.8],
+      rowH: 0.45,
+      fontSize: 9.5,
+      border: { pt: 0.5, color: 'CBD5E1' }
     });
-
-    slide2.addText(b.label, {
-      x: boxX,
-      y: 1.9,
-      w: boxW,
-      h: 0.35,
-      fontSize: 9,
-      bold: true,
-      color: textMuted,
-      align: 'center'
-    });
-  });
-
-  // Treatment Log Table
-  slide2.addText('Logged Clinical Procedures & History', {
-    x: 0.8,
-    y: 2.65,
-    w: 8.0,
-    h: 0.35,
-    fontSize: 14,
-    bold: true,
-    color: textDark
-  });
-
-  const tableHeader = [
-    { text: 'Tooth #', options: { bold: true, color: 'FFFFFF', fill: { color: primaryColor } } },
-    { text: 'Procedure', options: { bold: true, color: 'FFFFFF', fill: { color: primaryColor } } },
-    { text: 'Date', options: { bold: true, color: 'FFFFFF', fill: { color: primaryColor } } },
-    { text: 'Status', options: { bold: true, color: 'FFFFFF', fill: { color: primaryColor } } },
-    { text: 'Fee (EGP)', options: { bold: true, color: 'FFFFFF', fill: { color: primaryColor } } },
-    { text: 'Doctor', options: { bold: true, color: 'FFFFFF', fill: { color: primaryColor } } }
-  ];
-
-  const procedureRows =
-    toothRecords.length > 0
-      ? toothRecords.slice(0, 8).map((r) => [
-          { text: `#${r.toothNumber}`, options: { bold: true } },
-          { text: r.procedureName },
-          { text: r.date },
-          { text: r.status.toUpperCase(), options: { color: r.status === 'completed' ? '16A34A' : 'EA580C', bold: true } },
-          { text: `${r.cost.toLocaleString()}` },
-          { text: r.performingDoctorName || 'Dr. Mohamed Al-Sayed' }
-        ])
-      : [
-          [
-            { text: 'N/A' },
-            { text: 'No treatment records logged yet.' },
-            { text: '-' },
-            { text: '-' },
-            { text: '-' },
-            { text: '-' }
-          ]
-        ];
-
-  slide2.addTable([tableHeader, ...procedureRows], {
-    x: 0.8,
-    y: 3.1,
-    w: 11.7,
-    h: 3.8,
-    colW: [1.2, 4.2, 1.6, 1.6, 1.4, 1.7],
-    fontSize: 10,
-    border: { pt: 0.5, color: 'CBD5E1' }
   });
 
   // -------------------------------------------------------------
-  // SUBSEQUENT SLIDES: Dedicated Slide per X-ray / Intraoral / DICOM Image
+  // SLIDE 3: Financial Receipts & Payment Ledger (If payments exist)
+  // -------------------------------------------------------------
+  if (payments && payments.length > 0) {
+    const paySlide = pptx.addSlide();
+
+    paySlide.addShape(pptx.ShapeType.rect, {
+      x: 0,
+      y: 0,
+      w: 13.33,
+      h: 0.95,
+      fill: { color: '065F46' } // Emerald 800
+    });
+
+    paySlide.addText(`PAYMENT RECEIPTS & REVENUE LEDGER - ${patient.name.toUpperCase()}`, {
+      x: 0.8,
+      y: 0.25,
+      w: 11.5,
+      h: 0.45,
+      fontSize: 18,
+      color: 'FFFFFF',
+      bold: true
+    });
+
+    const payHeader = [
+      { text: '#', options: { bold: true, color: 'FFFFFF', fill: { color: '047857' } } },
+      { text: 'Receipt ID', options: { bold: true, color: 'FFFFFF', fill: { color: '047857' } } },
+      { text: 'Date & Time', options: { bold: true, color: 'FFFFFF', fill: { color: '047857' } } },
+      { text: 'Method', options: { bold: true, color: 'FFFFFF', fill: { color: '047857' } } },
+      { text: 'Amount (EGP)', options: { bold: true, color: 'FFFFFF', fill: { color: '047857' } } },
+      { text: 'Balance After', options: { bold: true, color: 'FFFFFF', fill: { color: '047857' } } },
+      { text: 'Notes / Reference', options: { bold: true, color: 'FFFFFF', fill: { color: '047857' } } }
+    ];
+
+    const payRows = payments.slice(0, 9).map((p, idx) => [
+      { text: `${idx + 1}` },
+      { text: p.id.slice(0, 10), options: { color: textMuted } },
+      { text: p.date ? p.date.replace('T', ' ').slice(0, 16) : 'N/A' },
+      { text: p.method, options: { bold: true } },
+      { text: `${p.amount.toLocaleString()} EGP`, options: { bold: true, color: successGreen } },
+      { text: p.remainingBalanceSnapshot !== undefined ? `${p.remainingBalanceSnapshot.toLocaleString()} EGP` : '-' },
+      { text: p.notes || '-' }
+    ]);
+
+    paySlide.addTable([payHeader, ...payRows], {
+      x: 0.8,
+      y: 1.25,
+      w: 11.7,
+      h: 5.6,
+      colW: [0.6, 1.8, 2.0, 1.4, 1.8, 1.8, 2.3],
+      rowH: 0.42,
+      fontSize: 9.5,
+      border: { pt: 0.5, color: 'CBD5E1' }
+    });
+  }
+
+  // -------------------------------------------------------------
+  // SUBSEQUENT SLIDES: Dedicated Diagnostic Slides (Images/X-rays)
   // -------------------------------------------------------------
   if (patientImages && patientImages.length > 0) {
     for (let i = 0; i < patientImages.length; i++) {
       const img = patientImages[i];
       const imgSlide = pptx.addSlide();
 
-      // Top bar with Image Metadata
+      // Top Header
       imgSlide.addShape(pptx.ShapeType.rect, {
         x: 0,
         y: 0,
-        w: '100%',
+        w: 13.33,
         h: 0.9,
-        fill: { color: darkBg }
+        fill: { color: headerBg }
       });
 
       imgSlide.addText(
@@ -366,9 +441,9 @@ export async function exportPatientFileToPptx({
       // Right Info Panel
       imgSlide.addShape(pptx.ShapeType.roundRect, {
         x: 8.8,
-        y: 1.2,
+        y: 1.1,
         w: 3.7,
-        h: 5.6,
+        h: 5.8,
         rectRadius: 0.1,
         fill: { color: cardBg },
         line: { color: 'CBD5E1', width: 1 }
@@ -376,10 +451,10 @@ export async function exportPatientFileToPptx({
 
       imgSlide.addText('Radiographic Specs', {
         x: 9.1,
-        y: 1.4,
+        y: 1.3,
         w: 3.1,
-        h: 0.35,
-        fontSize: 14,
+        h: 0.3,
+        fontSize: 13,
         bold: true,
         color: textDark
       });
@@ -388,66 +463,67 @@ export async function exportPatientFileToPptx({
         [{ text: 'Type', options: { bold: true } }, { text: img.type }],
         [{ text: 'Tooth Target', options: { bold: true } }, { text: img.toothNumber ? `#${img.toothNumber}` : 'Full Arch' }],
         [{ text: 'Upload Date', options: { bold: true } }, { text: img.date || 'N/A' }],
-        [{ text: 'Doctor', options: { bold: true } }, { text: img.uploadedBy || 'Lead Doctor' }],
+        [{ text: 'Doctor', options: { bold: true } }, { text: img.uploadedBy || clinicSettings?.doctorName || 'Lead Doctor' }],
         [{ text: 'File Name', options: { bold: true } }, { text: img.fileName || `Scan_${i + 1}.jpg` }]
       ];
 
       imgSlide.addTable(mediaSpecs, {
         x: 9.1,
-        y: 1.8,
+        y: 1.7,
         w: 3.1,
         h: 2.2,
         colW: [1.2, 1.9],
-        fontSize: 10,
+        rowH: 0.38,
+        fontSize: 9.5,
         fill: { color: cardBg },
         border: { pt: 0.5, color: 'E2E8F0' }
       });
 
       imgSlide.addText('Diagnostic Interpretation:', {
         x: 9.1,
-        y: 4.2,
+        y: 4.1,
         w: 3.1,
-        h: 0.3,
+        h: 0.25,
         fontSize: 11,
         bold: true,
         color: textDark
       });
 
-      imgSlide.addText('Verified under high-resolution clinical DICOM / Periapical viewer. No artifacts detected.', {
+      imgSlide.addText('Verified under high-resolution clinical DICOM viewer. Calibrated and archived.', {
         x: 9.1,
-        y: 4.55,
+        y: 4.4,
         w: 3.1,
-        h: 1.9,
-        fontSize: 10,
+        h: 2.2,
+        fontSize: 9.5,
         color: textMuted,
         fill: { color: 'FFFFFF' },
         margin: 6,
         line: { color: 'E2E8F0', width: 1 }
       });
 
-      // Embed Image onto Slide Canvas
+      // Embed Image onto Slide
       try {
         if (img.url && (img.url.startsWith('http') || img.url.startsWith('data:image/'))) {
           imgSlide.addImage({
             data: img.url.startsWith('data:image/') ? img.url : undefined,
             path: img.url.startsWith('http') ? img.url : undefined,
             x: 0.8,
-            y: 1.2,
+            y: 1.1,
             w: 7.6,
-            h: 5.6,
-            sizing: { type: 'contain', w: 7.6, h: 5.6 }
+            h: 5.8,
+            sizing: { type: 'contain', w: 7.6, h: 5.8 }
           });
         }
       } catch (imgErr) {
         console.warn('Failed to embed image onto slide:', imgErr);
         imgSlide.addShape(pptx.ShapeType.rect, {
           x: 0.8,
-          y: 1.2,
+          y: 1.1,
           w: 7.6,
-          h: 5.6,
+          h: 5.8,
           fill: { color: '000000' }
         });
-        imgSlide.addText(`[Radiograph Image Available in Clinic Database: ${img.fileName}]`, {
+        imgSlide.addText(`[Radiograph Scan in Database: ${img.fileName}]`, {
           x: 1.5,
           y: 3.5,
           w: 6.0,
@@ -460,7 +536,7 @@ export async function exportPatientFileToPptx({
     }
   }
 
-  // Trigger browser download
+  // Trigger download
   const safeFilename = `${patient.name.trim().replace(/[^a-zA-Z0-9_\u0600-\u06FF]/g, '_')}_Clinical_File.pptx`;
   await pptx.writeFile({ fileName: safeFilename });
 }

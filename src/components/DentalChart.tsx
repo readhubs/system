@@ -122,13 +122,13 @@ export const DentalChart: React.FC<DentalChartProps> = ({
     const isAnterior = !isMolar && !isPremolar;
 
     return (
-      <div key={num} className="relative group flex flex-col items-center">
+      <div key={num} className="relative group flex flex-col items-center shrink-0">
         <button
           type="button"
           disabled={readOnly}
           onClick={() => handleToothClick(num)}
-          className={`relative flex flex-col items-center justify-center p-1.5 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
-            isDeciduous ? 'w-10 sm:w-11 h-16' : 'w-11 sm:w-12 md:w-14 h-18 sm:h-20'
+          className={`relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-2xl border-2 transition-all duration-200 cursor-pointer shrink-0 ${
+            isDeciduous ? 'w-10 sm:w-11 h-16' : 'w-11 sm:w-12 md:w-13 h-18 sm:h-20'
           } ${visual.bgClass} ${
             isSelected
               ? 'ring-4 ring-sky-500 ring-offset-2 scale-105 z-20 border-sky-600 shadow-lg'
@@ -181,19 +181,19 @@ export const DentalChart: React.FC<DentalChartProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-sm space-y-6">
+    <div className="bg-white  rounded-3xl border border-slate-200  p-4 sm:p-6 shadow-sm space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100  pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+            <h3 className="text-lg font-black text-slate-900  tracking-tight">
               Interactive Odontogram (Dental Arch)
             </h3>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-400">
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800  ">
               Visual FDI Architecture
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500  mt-0.5">
             Click any tooth to open the quick procedure action sheet or inspect history.
           </p>
         </div>
@@ -203,8 +203,8 @@ export const DentalChart: React.FC<DentalChartProps> = ({
           onClick={() => setShowPediatric(!showPediatric)}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
             showPediatric
-              ? 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700'
-              : 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+              ? 'bg-purple-100 text-purple-800 border-purple-300   '
+              : 'bg-slate-50 text-slate-700 border-slate-200   '
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
@@ -213,30 +213,30 @@ export const DentalChart: React.FC<DentalChartProps> = ({
       </div>
 
       {/* Status Legend */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs font-semibold bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/80">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs font-semibold bg-slate-50  p-3 rounded-2xl border border-slate-100 ">
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-md bg-white border-2 border-slate-300"></span>
-          <span className="text-slate-600 dark:text-slate-400">Healthy (سليم)</span>
+          <span className="text-slate-600 ">Healthy (سليم)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-md bg-sky-500"></span>
-          <span className="text-sky-700 dark:text-sky-400">Treated / Filling (حشو)</span>
+          <span className="text-sky-700 ">Treated / Filling (حشو)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-md bg-teal-500"></span>
-          <span className="text-teal-700 dark:text-teal-400">Endo / RCT (عصب)</span>
+          <span className="text-teal-700 ">Endo / RCT (عصب)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-md bg-purple-500"></span>
-          <span className="text-purple-700 dark:text-purple-400">Crown (تركيبة)</span>
+          <span className="text-purple-700 ">Crown (تركيبة)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-md bg-amber-400"></span>
-          <span className="text-amber-700 dark:text-amber-400">Needs Treatment (يحتاج علاج)</span>
+          <span className="text-amber-700 ">Needs Treatment (يحتاج علاج)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-md bg-slate-800"></span>
-          <span className="text-slate-700 dark:text-slate-400">Extracted (مخلوع)</span>
+          <span className="text-slate-700 ">Extracted (مخلوع)</span>
         </div>
       </div>
 
@@ -252,7 +252,7 @@ export const DentalChart: React.FC<DentalChartProps> = ({
             </div>
             <button
               onClick={() => setActiveMenuTooth(null)}
-              className="text-slate-400 hover:text-white text-xs"
+              className="text-slate-500 hover:text-white text-xs"
             >
               ✕ Close
             </button>
@@ -311,25 +311,25 @@ export const DentalChart: React.FC<DentalChartProps> = ({
       )}
 
       {/* Main Arch Odontogram Layout */}
-      <div className="space-y-8 overflow-x-auto pb-4">
+      <div className="space-y-8 overflow-x-auto pb-4 pt-1">
         {/* UPPER ARCH (MAXILLA) */}
-        <div className="space-y-2 min-w-[660px]">
-          <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-400 px-3">
-            <span>Upper Right (Q1)</span>
-            <span className="text-sky-700 dark:text-sky-400 font-bold font-mono bg-sky-50 dark:bg-sky-950/80 px-3 py-1 rounded-full border border-sky-200 dark:border-sky-800">
+        <div className="space-y-2 min-w-[720px]">
+          <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-700 px-3">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-sky-500"></span>Upper Right (Q1: #18 - #11)</span>
+            <span className="text-sky-800 font-extrabold font-mono bg-sky-100 px-3 py-1 rounded-full border border-sky-300">
               MAXILLA (Upper Jaw)
             </span>
-            <span>Upper Left (Q2)</span>
+            <span className="flex items-center gap-1.5">Upper Left (Q2: #21 - #28)<span className="w-2 h-2 rounded-full bg-sky-500"></span></span>
           </div>
 
-          <div className="flex items-center justify-center gap-1 sm:gap-2 bg-slate-50 dark:bg-slate-950/60 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800/80">
-            <div className="flex gap-1 sm:gap-2">
+          <div className="flex items-center justify-center gap-1 sm:gap-1.5 bg-slate-50 p-4 rounded-3xl border border-slate-200">
+            <div className="flex gap-1 sm:gap-1.5">
               {UPPER_JAW_RIGHT.map((num) => renderToothSVG(num))}
             </div>
 
-            <div className="h-16 w-0.5 bg-sky-400 mx-2 rounded-full opacity-60"></div>
+            <div className="h-16 w-0.5 bg-sky-500 mx-2 rounded-full opacity-60"></div>
 
-            <div className="flex gap-1 sm:gap-2">
+            <div className="flex gap-1 sm:gap-1.5">
               {UPPER_JAW_LEFT.map((num) => renderToothSVG(num))}
             </div>
           </div>
@@ -337,19 +337,19 @@ export const DentalChart: React.FC<DentalChartProps> = ({
 
         {/* DECIDUOUS ARCHES IF TOGGLED */}
         {showPediatric && (
-          <div className="space-y-3 min-w-[500px] bg-purple-50/60 dark:bg-purple-950/30 p-4 rounded-3xl border border-purple-200 dark:border-purple-800/60">
-            <div className="text-center text-xs font-black text-purple-800 dark:text-purple-300 uppercase tracking-wider">
-              Pediatric Primary Teeth (الأسنان اللبنية)
+          <div className="space-y-3 min-w-[550px] bg-purple-50 p-4 rounded-3xl border border-purple-200">
+            <div className="text-center text-xs font-black text-purple-900 uppercase tracking-wider">
+              Pediatric Primary Teeth (الأسنان اللبنية: #55-#51 | #61-#65 & #85-#81 | #71-#75)
             </div>
             <div className="flex flex-col gap-3">
               {/* Upper Ped */}
-              <div className="flex items-center justify-center gap-1 sm:gap-2">
+              <div className="flex items-center justify-center gap-1 sm:gap-1.5">
                 <div className="flex gap-1">{UPPER_PED_RIGHT.map((num) => renderToothSVG(num, true))}</div>
                 <div className="h-12 w-0.5 bg-purple-400 mx-2"></div>
                 <div className="flex gap-1">{UPPER_PED_LEFT.map((num) => renderToothSVG(num, true))}</div>
               </div>
               {/* Lower Ped */}
-              <div className="flex items-center justify-center gap-1 sm:gap-2">
+              <div className="flex items-center justify-center gap-1 sm:gap-1.5">
                 <div className="flex gap-1">{LOWER_PED_RIGHT.map((num) => renderToothSVG(num, true))}</div>
                 <div className="h-12 w-0.5 bg-purple-400 mx-2"></div>
                 <div className="flex gap-1">{LOWER_PED_LEFT.map((num) => renderToothSVG(num, true))}</div>
@@ -359,25 +359,25 @@ export const DentalChart: React.FC<DentalChartProps> = ({
         )}
 
         {/* LOWER ARCH (MANDIBLE) */}
-        <div className="space-y-2 min-w-[660px]">
-          <div className="flex items-center justify-center gap-1 sm:gap-2 bg-slate-50 dark:bg-slate-950/60 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800/80">
-            <div className="flex gap-1 sm:gap-2">
+        <div className="space-y-2 min-w-[720px]">
+          <div className="flex items-center justify-center gap-1 sm:gap-1.5 bg-slate-50 p-4 rounded-3xl border border-slate-200">
+            <div className="flex gap-1 sm:gap-1.5">
               {LOWER_JAW_RIGHT.map((num) => renderToothSVG(num))}
             </div>
 
-            <div className="h-16 w-0.5 bg-sky-400 mx-2 rounded-full opacity-60"></div>
+            <div className="h-16 w-0.5 bg-sky-500 mx-2 rounded-full opacity-60"></div>
 
-            <div className="flex gap-1 sm:gap-2">
+            <div className="flex gap-1 sm:gap-1.5">
               {LOWER_JAW_LEFT.map((num) => renderToothSVG(num))}
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-400 px-3">
-            <span>Lower Right (Q4)</span>
-            <span className="text-sky-700 dark:text-sky-400 font-bold font-mono bg-sky-50 dark:bg-sky-950/80 px-3 py-1 rounded-full border border-sky-200 dark:border-sky-800">
+          <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-700 px-3">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-sky-500"></span>Lower Right (Q4: #48 - #41)</span>
+            <span className="text-sky-800 font-extrabold font-mono bg-sky-100 px-3 py-1 rounded-full border border-sky-300">
               MANDIBLE (Lower Jaw)
             </span>
-            <span>Lower Left (Q3)</span>
+            <span className="flex items-center gap-1.5">Lower Left (Q3: #31 - #38)<span className="w-2 h-2 rounded-full bg-sky-500"></span></span>
           </div>
         </div>
       </div>

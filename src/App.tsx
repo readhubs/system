@@ -515,16 +515,24 @@ export default function App() {
     }
   };
 
-  const handleDeletePayment = async (paymentId: string, amount: number) => {
-    if (!selectedPatientId || !currentUser?.clinicId) return;
+  const handleDeletePayment = async (paymentId: string, amount?: number, patientId?: string) => {
     try {
-      setPayments(prev => prev.filter((p) => p.id !== paymentId));
-      await deletePaymentFromFirestore(selectedPatientId, paymentId);
-      if (activePatient) {
-        const newBalance = (activePatient.balance || 0) + (amount || 0);
-        const updatedPatient = { ...activePatient, balance: newBalance };
-        setPatients(prev => prev.map((p) => (p.id === activePatient.id ? updatedPatient : p)));
-        await savePatientToFirestore(updatedPatient);
+      const existingPay = payments.find((p) => p.id === paymentId);
+      const targetPatientId = patientId || selectedPatientId || existingPay?.patientId;
+      const targetAmount = amount !== undefined ? amount : (existingPay?.amount || 0);
+
+      // Optimistically remove from local state
+      setPayments((prev) => prev.filter((p) => p.id !== paymentId));
+
+      if (targetPatientId) {
+        await deletePaymentFromFirestore(targetPatientId, paymentId);
+        const targetPatient = patients.find((p) => p.id === targetPatientId);
+        if (targetPatient) {
+          const newBalance = (targetPatient.balance || 0) + targetAmount;
+          const updatedPatient = { ...targetPatient, balance: newBalance };
+          setPatients((prev) => prev.map((p) => (p.id === targetPatientId ? updatedPatient : p)));
+          await savePatientToFirestore(updatedPatient);
+        }
       }
     } catch (err) {
       console.warn('handleDeletePayment error:', err);

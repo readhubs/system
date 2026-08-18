@@ -145,7 +145,7 @@ export function AssistantDashboard({
             <h1 className="text-base sm:text-lg font-bold text-white leading-tight">
               {clinicSettings.name || 'Dental Clinic'}
             </h1>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               Reception Assistant Portal • <span className="text-teal-400 font-semibold">{currentUser.name}</span>
             </p>
           </div>
@@ -153,7 +153,7 @@ export function AssistantDashboard({
 
         <button
           onClick={onLogout}
-          className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
+          className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
           title="Sign Out"
         >
           <LogOut className="w-4 h-4" />
@@ -164,7 +164,7 @@ export function AssistantDashboard({
       <main className="max-w-3xl w-full mx-auto my-auto py-8">
         <div className="text-center mb-8 space-y-2">
           <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Reception Quick Actions</h2>
-          <p className="text-sm text-slate-400">Choose one of the 3 primary tasks below</p>
+          <p className="text-sm text-slate-500">Choose one of the 3 primary tasks below</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
@@ -177,7 +177,7 @@ export function AssistantDashboard({
               <UserPlus className="w-8 h-8" />
             </div>
             <span className="text-lg font-black text-white">1. Add Patient</span>
-            <span className="text-xs text-slate-400 mt-1">تسجيل مريض جديد</span>
+            <span className="text-xs text-slate-500 mt-1">تسجيل مريض جديد</span>
           </button>
 
           {/* Card 2: Today's Appointments */}
@@ -194,7 +194,7 @@ export function AssistantDashboard({
               <CalendarCheck className="w-8 h-8" />
             </div>
             <span className="text-lg font-black text-white">2. Appointments</span>
-            <span className="text-xs text-slate-400 mt-1">مواعيد وحجوزات اليوم</span>
+            <span className="text-xs text-slate-500 mt-1">مواعيد وحجوزات اليوم</span>
           </button>
 
           {/* Card 3: Collect Payment */}
@@ -206,7 +206,7 @@ export function AssistantDashboard({
               <CreditCard className="w-8 h-8" />
             </div>
             <span className="text-lg font-black text-white">3. Collect Payment</span>
-            <span className="text-xs text-slate-400 mt-1">تحصيل دفعة وطباعة إيصال</span>
+            <span className="text-xs text-slate-500 mt-1">تحصيل دفعة وطباعة إيصال</span>
           </button>
         </div>
       </main>
@@ -229,7 +229,7 @@ export function AssistantDashboard({
               </div>
               <button
                 onClick={() => setActiveModal('none')}
-                className="text-slate-400 hover:text-white text-sm p-1"
+                className="text-slate-500 hover:text-white text-sm p-1"
               >
                 ✕
               </button>
@@ -244,7 +244,7 @@ export function AssistantDashboard({
 
             <form onSubmit={handleFastAddPatient} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-bold text-slate-200">
                   Patient Full Name <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -253,12 +253,12 @@ export function AssistantDashboard({
                   placeholder="e.g. Mahmoud Ali"
                   value={newPatientName}
                   onChange={(e) => setNewPatientName(e.target.value)}
-                  className="w-full mt-1.5 px-4 py-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-base text-slate-100 focus:outline-none focus:border-indigo-500"
+                  className="w-full mt-1.5 px-4 py-3.5 rounded-2xl bg-slate-950 border border-slate-700 text-base text-slate-100 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-bold text-slate-200">
                   Phone Number (Egyptian WhatsApp) <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -267,18 +267,18 @@ export function AssistantDashboard({
                   placeholder="010XXXXXXXX"
                   value={newPatientPhone}
                   onChange={(e) => setNewPatientPhone(e.target.value)}
-                  className="w-full mt-1.5 px-4 py-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-base text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                  className="w-full mt-1.5 px-4 py-3.5 rounded-2xl bg-slate-950 border border-slate-700 text-base text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300">General Note / Reason for Visit (Optional)</label>
+                <label className="text-xs font-bold text-slate-200">General Note / Reason for Visit (Optional)</label>
                 <input
                   type="text"
                   placeholder="e.g. Toothache, Scaling, Referral"
                   value={newPatientNotes}
                   onChange={(e) => setNewPatientNotes(e.target.value)}
-                  className="w-full mt-1.5 px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                  className="w-full mt-1.5 px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -286,7 +286,7 @@ export function AssistantDashboard({
                 <button
                   type="button"
                   onClick={() => setActiveModal('none')}
-                  className="px-5 py-3 rounded-2xl bg-slate-800 text-slate-300 text-sm font-semibold hover:bg-slate-700"
+                  className="px-5 py-3 rounded-2xl bg-slate-800 text-slate-200 text-sm font-semibold hover:bg-slate-700"
                 >
                   Cancel
                 </button>
@@ -316,7 +316,7 @@ export function AssistantDashboard({
               </div>
               <button
                 onClick={() => setActiveModal('none')}
-                className="text-slate-400 hover:text-white text-sm p-1"
+                className="text-slate-500 hover:text-white text-sm p-1"
               >
                 ✕
               </button>
@@ -346,7 +346,7 @@ export function AssistantDashboard({
                             {appt.time}
                           </span>
                         </div>
-                        <div className="text-xs text-slate-400 flex items-center gap-3">
+                        <div className="text-xs text-slate-500 flex items-center gap-3">
                           <span className="text-indigo-400 font-medium">{appt.procedure}</span>
                           <span>•</span>
                           <a href={`tel:${appt.phone}`} className="text-slate-300 font-mono hover:underline">
@@ -415,7 +415,7 @@ export function AssistantDashboard({
               </div>
               <button
                 onClick={() => setActiveModal('none')}
-                className="text-slate-400 hover:text-white text-sm p-1"
+                className="text-slate-500 hover:text-white text-sm p-1"
               >
                 ✕
               </button>
@@ -423,14 +423,14 @@ export function AssistantDashboard({
 
             <form onSubmit={handleRecordPayment} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-bold text-slate-200">
                   Select Patient <span className="text-rose-400">*</span>
                 </label>
                 <select
                   required
                   value={paymentPatientId}
                   onChange={(e) => setPaymentPatientId(e.target.value)}
-                  className="w-full mt-1.5 px-4 py-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                  className="w-full mt-1.5 px-4 py-3.5 rounded-2xl bg-slate-950 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
                 >
                   <option value="">-- Choose Patient --</option>
                   {patients.map((p) => (
@@ -442,7 +442,7 @@ export function AssistantDashboard({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-bold text-slate-200">
                   Amount in EGP (المبلغ بالجنية) <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -453,12 +453,12 @@ export function AssistantDashboard({
                   placeholder="Enter any amount (e.g. 250, 1500, etc.)"
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="w-full mt-1.5 px-4 py-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-lg font-black text-emerald-400 focus:outline-none focus:border-emerald-500"
+                  className="w-full mt-1.5 px-4 py-3.5 rounded-2xl bg-slate-950 border border-slate-700 text-lg font-black text-emerald-400 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300">Payment Method (طريقة الدفع)</label>
+                <label className="text-xs font-bold text-slate-200">Payment Method (طريقة الدفع)</label>
                 <div className="grid grid-cols-3 gap-2 mt-1.5">
                   {(['Cash', 'InstaPay', 'Visa'] as const).map((method) => (
                     <button
@@ -468,7 +468,7 @@ export function AssistantDashboard({
                       className={`py-3 rounded-xl text-xs font-bold transition-all ${
                         paymentMethod === method
                           ? 'bg-emerald-600 text-white shadow-md'
-                          : 'bg-slate-950 text-slate-400 border border-slate-800'
+                          : 'bg-slate-950 text-slate-300 border border-slate-700 hover:bg-slate-900'
                       }`}
                     >
                       {method}
@@ -478,13 +478,13 @@ export function AssistantDashboard({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300">Notes / Procedure (Optional)</label>
+                <label className="text-xs font-bold text-slate-200">Notes / Procedure (Optional)</label>
                 <input
                   type="text"
                   placeholder="e.g. Session 1 installment"
                   value={paymentNotes}
                   onChange={(e) => setPaymentNotes(e.target.value)}
-                  className="w-full mt-1.5 px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                  className="w-full mt-1.5 px-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
@@ -492,7 +492,7 @@ export function AssistantDashboard({
                 <button
                   type="button"
                   onClick={() => setActiveModal('none')}
-                  className="px-5 py-3 rounded-2xl bg-slate-800 text-slate-300 text-sm font-semibold hover:bg-slate-700"
+                  className="px-5 py-3 rounded-2xl bg-slate-800 text-slate-200 text-sm font-semibold hover:bg-slate-700"
                 >
                   Cancel
                 </button>

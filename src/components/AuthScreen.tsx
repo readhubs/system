@@ -3,13 +3,15 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInAnonymously,
   GoogleAuthProvider
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import {
   findClinicByOwnerEmail,
-  saveUserProfileToFirestore
+  saveUserProfileToFirestore,
+  findStaffByPhoneOrEmail
 } from '../lib/firestoreService';
 import {
   Stethoscope,
@@ -129,7 +131,82 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         await saveUserProfileToFirestore(doctorProfile);
         onAuthenticated(doctorProfile);
       } else {
-        const userCred = await signInWithEmailAndPassword(auth, email.trim(), password);
+        const inputId = email.trim();
+        const inputPassword = password;
+
+        // 1. Check if user is a clinic staff / assistant (Phone or Email login)
+        let staffProfile = await findStaffByPhoneOrEmail(inputId);
+
+        if (staffProfile) {
+          if (staffProfile.disabled) {
+            throw new Error('This assistant account has been disabled by the clinic administrator.');
+          }
+
+          const validPassword =
+            (staffProfile.initialPassword && staffProfile.initialPassword === inputPassword) ||
+            (staffProfile.password && staffProfile.password === inputPassword);
+
+          if (!validPassword) {
+            throw new Error('Incorrect password. Please verify the password provided by the doctor.');
+          }
+
+          // Successfully authenticated assistant!
+          try {
+            const anonCred = await signInAnonymously(auth);
+            if (anonCred.user) {
+              staffProfile = {
+                ...staffProfile,
+                uid: anonCred.user.uid
+              };
+            }
+          } catch (anonErr) {
+            console.warn('Anonymous auth note (fallback to local session):', anonErr);
+          }
+
+          localStorage.setItem(`clinicpro_user_${staffProfile.uid}`, JSON.stringify(staffProfile));
+          localStorage.setItem('clinicpro_active_session', JSON.stringify(staffProfile));
+          await saveUserProfileToFirestore(staffProfile);
+          onAuthenticated(staffProfile);
+          return;
+        }
+
+        // 2. Doctor Firebase Auth Sign In
+        let userCred: any = null;
+        try {
+          const targetEmail = inputId.includes('@') ? inputId : `${inputId}@clinicpro.local`;
+          userCred = await signInWithEmailAndPassword(auth, targetEmail, inputPassword);
+        } catch (firebaseErr: any) {
+          // If primary login failed and input had no @, also try raw input
+          if (!inputId.includes('@')) {
+            try {
+              userCred = await signInWithEmailAndPassword(auth, inputId, inputPassword);
+            } catch {
+              // Re-check staff lookup with flexible formatting
+              const retryStaff = await findStaffByPhoneOrEmail(inputId);
+              if (retryStaff) {
+                if (retryStaff.disabled) {
+                  throw new Error('This assistant account has been disabled by the clinic administrator.');
+                }
+                if (
+                  (retryStaff.initialPassword && retryStaff.initialPassword === inputPassword) ||
+                  (retryStaff.password && retryStaff.password === inputPassword)
+                ) {
+                  localStorage.setItem(`clinicpro_user_${retryStaff.uid}`, JSON.stringify(retryStaff));
+                  localStorage.setItem('clinicpro_active_session', JSON.stringify(retryStaff));
+                  await saveUserProfileToFirestore(retryStaff);
+                  onAuthenticated(retryStaff);
+                  return;
+                } else {
+                  throw new Error('Incorrect password. Please verify the initial password set by the doctor.');
+                }
+              }
+              throw firebaseErr;
+            }
+          } else {
+            throw firebaseErr;
+          }
+        }
+
         const uid = userCred.user.uid;
 
         let profileData: UserProfile | null = null;
@@ -488,7 +565,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
           <div className="flex items-center my-3">
             <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink mx-4 text-[11px] font-bold text-slate-400 uppercase">or with email</span>
+            <span className="flex-shrink mx-4 text-[11px] font-bold text-slate-500 uppercase">or with email</span>
             <div className="flex-grow border-t border-slate-200"></div>
           </div>
 
@@ -500,7 +577,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     Doctor Full Name
                   </label>
                   <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                     <input
                       type="text"
                       required
@@ -517,7 +594,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     Dental Clinic / Center Name
                   </label>
                   <div className="relative">
-                    <Building className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <Building className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                     <input
                       type="text"
                       required
@@ -546,14 +623,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
             <div>
               <label className="block text-[11px] font-extrabold text-slate-700 uppercase tracking-wider mb-1">
-                Email Address
+                {isSignUp ? 'Doctor Email Address' : 'Email Address or Phone Number (Doctor / Assistant)'}
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                 <input
-                  type="email"
+                  type={isSignUp ? 'email' : 'text'}
                   required
-                  placeholder="doctor@clinicpro.eg"
+                  placeholder={isSignUp ? 'doctor@clinicpro.eg' : 'doctor@clinicpro.eg or 010XXXXXXXX'}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:border-sky-600 outline-none transition-all"
@@ -566,7 +643,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                 Password
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                 <input
                   type="password"
                   required
@@ -668,7 +745,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         </div>
       )}
 
-      <div className="mt-6 text-center text-slate-400 text-[11px] space-y-1">
+      <div className="mt-6 text-center text-slate-500 text-[11px] space-y-1">
         <p className="flex items-center justify-center gap-1.5 font-bold">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
           Encrypted Authentication & Local Offline Persistence Active

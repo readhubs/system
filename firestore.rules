@@ -72,7 +72,7 @@ service cloud.firestore {
 
     // Users / Staff Collection
     match /users/{userId} {
-      allow read: if isSuperAdmin() || (isSignedIn() && (request.auth.uid == userId || (hasUserDoc() && getUserData().clinicId == resource.data.clinicId)));
+      allow read: if true;
       allow create, update, write: if isSuperAdmin() || (isSignedIn() && (request.auth.uid == userId || (hasUserDoc() && getUserData().role == 'doctor')));
       allow delete: if isSuperAdmin() || (isSignedIn() && hasUserDoc() && getUserData().role == 'doctor');
     }

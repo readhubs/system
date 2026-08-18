@@ -46,6 +46,7 @@ export interface UserProfile {
   clinicId: string;
   disabled?: boolean;
   initialPassword?: string;
+  password?: string;
   permissions: PermissionsMap;
   createdAt?: string;
 }

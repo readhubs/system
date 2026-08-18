@@ -216,7 +216,18 @@ export default function App() {
         setCurrentUser(profile);
       } else {
         const currentSession = localStorage.getItem('clinicpro_active_session');
-        if (!currentSession) {
+        if (currentSession) {
+          try {
+            const parsed = JSON.parse(currentSession);
+            if (parsed && parsed.uid) {
+              setCurrentUser(parsed);
+            } else {
+              setCurrentUser(null);
+            }
+          } catch {
+            setCurrentUser(null);
+          }
+        } else {
           setCurrentUser(null);
         }
       }

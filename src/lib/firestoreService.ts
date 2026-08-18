@@ -636,10 +636,119 @@ export function subscribeStaffList(clinicId: string, onUpdate: (staff: UserProfi
 
 export async function saveStaffUserToFirestore(user: UserProfile) {
   try {
+    // 1. Write to Firestore
     await setDoc(doc(db, 'users', user.uid), user, { merge: true });
+
+    // 2. Cache in localStorage for offline & quick authentication
+    localStorage.setItem(`clinicpro_user_${user.uid}`, JSON.stringify(user));
+    
+    try {
+      const globalStaffStr = localStorage.getItem('clinicpro_global_staff') || '[]';
+      const globalStaff: UserProfile[] = JSON.parse(globalStaffStr);
+      const filtered = globalStaff.filter((s) => s.uid !== user.uid);
+      filtered.push(user);
+      localStorage.setItem('clinicpro_global_staff', JSON.stringify(filtered));
+    } catch (e) {
+      console.warn('localStorage global staff cache update note:', e);
+    }
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
   }
+}
+
+export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserProfile | null> {
+  const cleanRaw = identifier.trim();
+  const cleanLower = cleanRaw.toLowerCase();
+  const digitsOnly = cleanRaw.replace(/\D/g, '');
+
+  // 1. Check local storage cache first
+  try {
+    const globalStaffStr = localStorage.getItem('clinicpro_global_staff');
+    if (globalStaffStr) {
+      const globalStaff: UserProfile[] = JSON.parse(globalStaffStr);
+      const found = globalStaff.find((u) => {
+        const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
+        const uEmailLower = (u.email || '').toLowerCase();
+        return (
+          (digitsOnly && uPhoneDigits === digitsOnly) ||
+          (uEmailLower && uEmailLower === cleanLower) ||
+          (digitsOnly && uEmailLower === `${digitsOnly}@clinicpro.local`)
+        );
+      });
+      if (found) return found;
+    }
+
+    // Also scan individual cached user keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('clinicpro_user_')) {
+        try {
+          const item = JSON.parse(localStorage.getItem(key) || '{}');
+          if (item && item.uid) {
+            const uPhoneDigits = (item.phone || '').replace(/\D/g, '');
+            const uEmailLower = (item.email || '').toLowerCase();
+            if (
+              (digitsOnly && uPhoneDigits === digitsOnly) ||
+              (uEmailLower && uEmailLower === cleanLower) ||
+              (digitsOnly && uEmailLower === `${digitsOnly}@clinicpro.local`)
+            ) {
+              return item as UserProfile;
+            }
+          }
+        } catch (e) {
+          // ignore item parse error
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('localStorage staff search note:', e);
+  }
+
+  // 2. Query Firestore users collection
+  try {
+    // A. Query by exact email
+    const qEmail = query(collection(db, 'users'), where('email', '==', cleanLower));
+    const snapEmail = await getDocs(qEmail);
+    if (!snapEmail.empty) {
+      const data = snapEmail.docs[0].data() as UserProfile;
+      return { ...data, uid: snapEmail.docs[0].id };
+    }
+
+    // B. Query by clean raw email
+    if (cleanRaw !== cleanLower) {
+      const qRawEmail = query(collection(db, 'users'), where('email', '==', cleanRaw));
+      const snapRawEmail = await getDocs(qRawEmail);
+      if (!snapRawEmail.empty) {
+        const data = snapRawEmail.docs[0].data() as UserProfile;
+        return { ...data, uid: snapRawEmail.docs[0].id };
+      }
+    }
+
+    // C. Query by phone number if digits exist
+    if (digitsOnly) {
+      const qPhone = query(collection(db, 'users'), where('phone', '==', digitsOnly));
+      const snapPhone = await getDocs(qPhone);
+      if (!snapPhone.empty) {
+        const data = snapPhone.docs[0].data() as UserProfile;
+        return { ...data, uid: snapPhone.docs[0].id };
+      }
+
+      // Query by standard clinicpro generated local email: {digits}@clinicpro.local
+      const qLocalEmail = query(
+        collection(db, 'users'),
+        where('email', '==', `${digitsOnly}@clinicpro.local`)
+      );
+      const snapLocalEmail = await getDocs(qLocalEmail);
+      if (!snapLocalEmail.empty) {
+        const data = snapLocalEmail.docs[0].data() as UserProfile;
+        return { ...data, uid: snapLocalEmail.docs[0].id };
+      }
+    }
+  } catch (err) {
+    console.warn('findStaffByPhoneOrEmail Firestore query note:', err);
+  }
+
+  return null;
 }
 
 export async function deleteStaffUserFromFirestore(userId: string) {

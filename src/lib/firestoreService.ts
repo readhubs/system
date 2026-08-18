@@ -726,12 +726,13 @@ export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserP
   const digitsOnly = cleanRaw.replace(/\D/g, '');
   const last9Digits = digitsOnly.length >= 9 ? digitsOnly.slice(-9) : digitsOnly;
 
-  // 1. Check local storage cache first
+  // 1. Check local storage cache first (Assistant role ONLY)
   try {
     const globalStaffStr = localStorage.getItem('clinicpro_global_staff');
     if (globalStaffStr) {
       const globalStaff: UserProfile[] = JSON.parse(globalStaffStr);
       const found = globalStaff.find((u) => {
+        if (u.role && u.role !== 'assistant') return false;
         const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
         const uEmailLower = (u.email || '').toLowerCase();
         return (
@@ -743,13 +744,13 @@ export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserP
       if (found) return found;
     }
 
-    // Also scan individual cached user keys
+    // Also scan individual cached user keys (Assistant role ONLY)
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('clinicpro_user_')) {
         try {
           const item = JSON.parse(localStorage.getItem(key) || '{}');
-          if (item && item.uid) {
+          if (item && item.uid && item.role === 'assistant') {
             const uPhoneDigits = (item.phone || '').replace(/\D/g, '');
             const uEmailLower = (item.email || '').toLowerCase();
             if (
@@ -778,19 +779,27 @@ export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserP
     }
   }
 
-  // 3. Query Firestore users collection
+  // 3. Query Firestore users collection for ASSISTANTS ONLY
   try {
-    // A. Query by exact email
-    const qEmail = query(collection(db, 'users'), where('email', '==', cleanLower));
+    // A. Query by exact email and role assistant
+    const qEmail = query(
+      collection(db, 'users'),
+      where('role', '==', 'assistant'),
+      where('email', '==', cleanLower)
+    );
     const snapEmail = await getDocs(qEmail);
     if (!snapEmail.empty) {
       const data = snapEmail.docs[0].data() as UserProfile;
       return { ...data, uid: snapEmail.docs[0].id };
     }
 
-    // B. Query by clean raw email
+    // B. Query by clean raw email and role assistant
     if (cleanRaw !== cleanLower) {
-      const qRawEmail = query(collection(db, 'users'), where('email', '==', cleanRaw));
+      const qRawEmail = query(
+        collection(db, 'users'),
+        where('role', '==', 'assistant'),
+        where('email', '==', cleanRaw)
+      );
       const snapRawEmail = await getDocs(qRawEmail);
       if (!snapRawEmail.empty) {
         const data = snapRawEmail.docs[0].data() as UserProfile;
@@ -800,7 +809,11 @@ export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserP
 
     // C. Query by phone number if digits exist
     if (digitsOnly) {
-      const qPhone = query(collection(db, 'users'), where('phone', '==', digitsOnly));
+      const qPhone = query(
+        collection(db, 'users'),
+        where('role', '==', 'assistant'),
+        where('phone', '==', digitsOnly)
+      );
       const snapPhone = await getDocs(qPhone);
       if (!snapPhone.empty) {
         const data = snapPhone.docs[0].data() as UserProfile;
@@ -809,7 +822,11 @@ export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserP
 
       // Query by clean raw phone
       if (cleanRaw !== digitsOnly) {
-        const qRawPhone = query(collection(db, 'users'), where('phone', '==', cleanRaw));
+        const qRawPhone = query(
+          collection(db, 'users'),
+          where('role', '==', 'assistant'),
+          where('phone', '==', cleanRaw)
+        );
         const snapRawPhone = await getDocs(qRawPhone);
         if (!snapRawPhone.empty) {
           const data = snapRawPhone.docs[0].data() as UserProfile;
@@ -820,6 +837,7 @@ export async function findStaffByPhoneOrEmail(identifier: string): Promise<UserP
       // Query by standard clinicpro generated local email: {digits}@clinicpro.local
       const qLocalEmail = query(
         collection(db, 'users'),
+        where('role', '==', 'assistant'),
         where('email', '==', `${digitsOnly}@clinicpro.local`)
       );
       const snapLocalEmail = await getDocs(qLocalEmail);

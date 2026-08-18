@@ -217,8 +217,46 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
           return { authUid: finalUid, authEmail: assistantAuthEmail };
         };
 
-        // 1. Check if user is a clinic staff / assistant (Phone or Email login)
-        let staffProfile = await findStaffByPhoneOrEmail(inputId);
+        let userCred: any = null;
+        let staffProfile: UserProfile | null = null;
+
+        if (inputId.includes('@')) {
+          // 1. If input has @, try Doctor / Firebase Auth Sign In first
+          try {
+            userCred = await signInWithEmailAndPassword(auth, inputId, inputPassword);
+          } catch (firebaseErr: any) {
+            // If Firebase Auth sign in failed, check if it's actually registered as an assistant email
+            staffProfile = await findStaffByPhoneOrEmail(inputId);
+            if (staffProfile && staffProfile.role === 'assistant') {
+              if (staffProfile.disabled) {
+                throw new Error('This assistant account has been disabled by the clinic administrator.');
+              }
+              const validPassword =
+                (staffProfile.initialPassword && staffProfile.initialPassword === inputPassword) ||
+                (staffProfile.password && staffProfile.password === inputPassword);
+              if (!validPassword) {
+                throw new Error('Incorrect password. Please verify the password provided by the doctor.');
+              }
+            } else {
+              throw firebaseErr;
+            }
+          }
+        } else {
+          // 2. Input does not have @ (likely phone number or staff ID): check staff first
+          staffProfile = await findStaffByPhoneOrEmail(inputId);
+          if (!staffProfile) {
+            // Try Firebase Auth directly with raw input or phone format
+            try {
+              userCred = await signInWithEmailAndPassword(auth, inputId, inputPassword);
+            } catch {
+              try {
+                userCred = await signInWithEmailAndPassword(auth, `${inputId}@clinicpro.local`, inputPassword);
+              } catch (fallbackErr) {
+                throw new Error('No doctor or assistant account found with this ID/phone. Please verify your credentials or sign up.');
+              }
+            }
+          }
+        }
 
         if (staffProfile) {
           if (staffProfile.disabled) {
@@ -277,81 +315,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
           await saveUserProfileToFirestore(activeAssistantProfile);
           onAuthenticated(activeAssistantProfile);
           return;
-        }
-
-        // 2. Doctor Firebase Auth Sign In
-        let userCred: any = null;
-        try {
-          const targetEmail = inputId.includes('@') ? inputId : `${inputId}@clinicpro.local`;
-          userCred = await signInWithEmailAndPassword(auth, targetEmail, inputPassword);
-        } catch (firebaseErr: any) {
-          // If primary login failed and input had no @, also try raw input
-          if (!inputId.includes('@')) {
-            try {
-              userCred = await signInWithEmailAndPassword(auth, inputId, inputPassword);
-            } catch {
-              // Re-check staff lookup with flexible formatting
-              const retryStaff = await findStaffByPhoneOrEmail(inputId);
-              if (retryStaff) {
-                if (retryStaff.disabled) {
-                  throw new Error('This assistant account has been disabled by the clinic administrator.');
-                }
-                if (
-                  (retryStaff.initialPassword && retryStaff.initialPassword === inputPassword) ||
-                  (retryStaff.password && retryStaff.password === inputPassword)
-                ) {
-                  const { authUid, authEmail } = await authenticateAssistantInFirebase(retryStaff, inputPassword);
-
-                  const resolvedClinicId =
-                    retryStaff.clinicId && retryStaff.clinicId !== 'system'
-                      ? retryStaff.clinicId
-                      : 'clinic_cairo_1';
-
-                  const activeAssistantProfile: UserProfile = {
-                    ...retryStaff,
-                    uid: authUid,
-                    email: authEmail,
-                    clinicId: resolvedClinicId,
-                    role: 'assistant',
-                    permissions: retryStaff.permissions || {
-                      viewPatients: true,
-                      editClinical: false,
-                      editToothChart: false,
-                      uploadViewImages: false,
-                      manageAppointments: true,
-                      viewFinancials: false,
-                      viewPaymentAmounts: false,
-                      recordPayments: true,
-                      manageStaff: false,
-                      accessSettings: false,
-                      sendWhatsApp: true
-                    }
-                  };
-
-                  localStorage.setItem(`clinicpro_user_${authUid}`, JSON.stringify(activeAssistantProfile));
-                  localStorage.setItem('clinicpro_active_session', JSON.stringify(activeAssistantProfile));
-                  
-                  try {
-                    await setDoc(doc(db, 'users', authUid), activeAssistantProfile, { merge: true });
-                    if (retryStaff.uid && retryStaff.uid !== authUid) {
-                      await setDoc(doc(db, 'users', retryStaff.uid), { ...retryStaff, authUid }, { merge: true });
-                    }
-                  } catch (dbErr) {
-                    console.warn('Could not write assistant user doc to Firestore:', dbErr);
-                  }
-
-                  await saveUserProfileToFirestore(activeAssistantProfile);
-                  onAuthenticated(activeAssistantProfile);
-                  return;
-                } else {
-                  throw new Error('Incorrect password. Please verify the initial password set by the doctor.');
-                }
-              }
-              throw firebaseErr;
-            }
-          } else {
-            throw firebaseErr;
-          }
         }
 
         const uid = userCred.user.uid;

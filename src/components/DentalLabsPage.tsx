@@ -59,7 +59,7 @@ export const DentalLabsPage: React.FC<DentalLabsPageProps> = ({
   const [customLabName, setCustomLabName] = useState('');
   const [restorationType, setRestorationType] = useState<RestorationType>('Crown - Zirconia');
   const [selectedToothNumbers, setSelectedToothNumbers] = useState<number[]>([]);
-  const [shade, setShade] = useState<DentalShade>('A2');
+  const [shade, setShade] = useState<DentalShade>('2M2');
   const [dateSent, setDateSent] = useState(new Date().toISOString().split('T')[0]);
   const [expectedReturnDate, setExpectedReturnDate] = useState(() => {
     const d = new Date();
@@ -386,7 +386,22 @@ export const DentalLabsPage: React.FC<DentalLabsPageProps> = ({
                  <div>
                     <label className="block font-bold text-slate-700 mb-1">Shade</label>
                     <select value={shade} onChange={e => setShade(e.target.value as any)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none">
-                       <option value="A1">A1</option><option value="A2">A2</option><option value="A3">A3</option><option value="B1">B1</option><option value="Bleach">Bleach</option><option value="Other">Other</option>
+                       <option value="1M1">1M1</option>
+                       <option value="1M2">1M2</option>
+                       <option value="2M1">2M1</option>
+                       <option value="2M2">2M2</option>
+                       <option value="2M3">2M3</option>
+                       <option value="3M1">3M1</option>
+                       <option value="3M2">3M2</option>
+                       <option value="3M3">3M3</option>
+                       <option value="4M1">4M1</option>
+                       <option value="4M2">4M2</option>
+                       <option value="4M3">4M3</option>
+                       <option value="5M1">5M1</option>
+                       <option value="0M1">0M1 (Bleach)</option>
+                       <option value="0M2">0M2 (Bleach)</option>
+                       <option value="0M3">0M3 (Bleach)</option>
+                       <option value="Other">Other</option>
                     </select>
                  </div>
                  <div>

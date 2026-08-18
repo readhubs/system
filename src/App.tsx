@@ -261,11 +261,11 @@ export default function App() {
     });
     const unsubStaff = subscribeStaffList(cid, (data) => setStaffList(data || []));
     const unsubDoctors = subscribeDoctors(cid, (data) => setDoctors(data || []));
-
-    // Define empty cleanups to preserve existing unsubscribe() cleanup references as requested
-    const unsubLabs = () => {};
-    const unsubPayments = () => {};
-    const unsubToothRecords = () => {};
+    
+    // Core Subscriptions for Heavy Data (Restored for universal sync)
+    const unsubLabs = subscribeLabOrders(cid, (data) => setLabOrders(data || []));
+    const unsubPayments = subscribeAllClinicPayments(cid, (data) => setPayments(data || []));
+    const unsubToothRecords = subscribeAllClinicToothRecords(cid, (data) => setToothRecords(data || []));
 
     return () => {
       unsubClinic();
@@ -280,38 +280,10 @@ export default function App() {
     };
   }, [currentUser?.clinicId]);
 
-  // Fetch heavy/historical data only when needed by the active tab
+  // Heavy data is now globally synchronized via the core subscription above
+  // This ensures payment deletions universally sync across the app
   useEffect(() => {
-    const cid = currentUser?.clinicId;
-    if (!cid) return;
-
-    if (activeTab === 'labs') {
-      import('./lib/firestoreService').then(({ fetchLabOrders }) => {
-        fetchLabOrders(cid).then((data) => setLabOrders(data || []));
-      });
-    }
-    
-    if (activeTab === 'reports') {
-      import('./lib/firestoreService').then(({ fetchAllClinicPayments, fetchAllClinicToothRecords }) => {
-        fetchAllClinicPayments(cid).then((data) => {
-          setPayments(prev => {
-            const currentPatientId = selectedPatientId;
-            const fetchedOthers = data.filter(p => p.patientId !== currentPatientId);
-            const currentSelected = prev.filter(p => p.patientId === currentPatientId);
-            // Merge to not overwrite active patient live edits if they exist
-            return [...fetchedOthers, ...currentSelected, ...data.filter(p => p.patientId === currentPatientId && !currentSelected.find(sp => sp.id === p.id))];
-          });
-        });
-        fetchAllClinicToothRecords(cid).then((data) => {
-          setToothRecords(prev => {
-            const currentPatientId = selectedPatientId;
-            const fetchedOthers = data.filter(r => r.patientId !== currentPatientId);
-            const currentSelected = prev.filter(r => r.patientId === currentPatientId);
-            return [...fetchedOthers, ...currentSelected, ...data.filter(r => r.patientId === currentPatientId && !currentSelected.find(sr => sr.id === r.id))];
-          });
-        });
-      });
-    }
+    // Legacy isolated fetch block removed to prevent unsynchronized state
   }, [activeTab, currentUser?.clinicId, selectedPatientId]);
 
   // Subcollections for active patient

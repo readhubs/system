@@ -137,6 +137,86 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         const inputId = email.trim();
         const inputPassword = password;
 
+        // Helper to authenticate assistant via Firebase Auth Email/Password (or Anonymous)
+        const authenticateAssistantInFirebase = async (
+          staff: UserProfile,
+          rawPass: string
+        ): Promise<{ authUid: string; authEmail: string }> => {
+          const cleanPhoneDigits = (staff.phone || inputId).replace(/\D/g, '');
+          const assistantAuthEmail =
+            staff.email && staff.email.includes('@') && !staff.email.endsWith('.local')
+              ? staff.email
+              : cleanPhoneDigits
+              ? `${cleanPhoneDigits}@clinicpro.local`
+              : `assistant_${staff.uid}@clinicpro.local`;
+
+          const assistantAuthPassword =
+            rawPass.length >= 6 ? rawPass : `${rawPass}_cpro123`;
+
+          let finalUid = staff.uid;
+
+          // 1. Try Firebase Auth with Email & Password
+          try {
+            const userCred = await signInWithEmailAndPassword(
+              auth,
+              assistantAuthEmail,
+              assistantAuthPassword
+            );
+            if (userCred.user) {
+              return { authUid: userCred.user.uid, authEmail: assistantAuthEmail };
+            }
+          } catch (signInErr: any) {
+            const code = signInErr?.code || '';
+            if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials') {
+              try {
+                const createCred = await createUserWithEmailAndPassword(
+                  auth,
+                  assistantAuthEmail,
+                  assistantAuthPassword
+                );
+                if (createCred.user) {
+                  return { authUid: createCred.user.uid, authEmail: assistantAuthEmail };
+                }
+              } catch (createErr: any) {
+                if (createErr?.code === 'auth/email-already-in-use') {
+                  try {
+                    const retryCred = await signInWithEmailAndPassword(
+                      auth,
+                      assistantAuthEmail,
+                      assistantAuthPassword
+                    );
+                    if (retryCred.user) {
+                      return { authUid: retryCred.user.uid, authEmail: assistantAuthEmail };
+                    }
+                  } catch (retryErr) {
+                    console.warn('Assistant retry sign-in note:', retryErr);
+                  }
+                } else {
+                  console.warn('Assistant create auth user note:', createErr);
+                }
+              }
+            } else {
+              console.warn('Assistant initial sign-in note:', signInErr);
+            }
+          }
+
+          // 2. Fallback: Try Anonymous Auth if not yet authenticated
+          if (!auth.currentUser) {
+            try {
+              const anonCred = await signInAnonymously(auth);
+              if (anonCred.user) {
+                return { authUid: anonCred.user.uid, authEmail: assistantAuthEmail };
+              }
+            } catch (anonErr) {
+              console.warn('Anonymous auth note:', anonErr);
+            }
+          } else {
+            return { authUid: auth.currentUser.uid, authEmail: assistantAuthEmail };
+          }
+
+          return { authUid: finalUid, authEmail: assistantAuthEmail };
+        };
+
         // 1. Check if user is a clinic staff / assistant (Phone or Email login)
         let staffProfile = await findStaffByPhoneOrEmail(inputId);
 
@@ -153,20 +233,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
             throw new Error('Incorrect password. Please verify the password provided by the doctor.');
           }
 
-          // Successfully authenticated assistant!
-          let activeUid = staffProfile.uid;
-          try {
-            if (!auth.currentUser) {
-              const anonCred = await signInAnonymously(auth);
-              if (anonCred.user) {
-                activeUid = anonCred.user.uid;
-              }
-            } else {
-              activeUid = auth.currentUser.uid;
-            }
-          } catch (anonErr) {
-            console.warn('Anonymous auth note (fallback to local session):', anonErr);
-          }
+          // Authenticate with Firebase Auth
+          const { authUid, authEmail } = await authenticateAssistantInFirebase(staffProfile, inputPassword);
 
           const resolvedClinicId =
             staffProfile.clinicId && staffProfile.clinicId !== 'system'
@@ -175,7 +243,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
           const activeAssistantProfile: UserProfile = {
             ...staffProfile,
-            uid: activeUid,
+            uid: authUid,
+            email: authEmail,
             clinicId: resolvedClinicId,
             role: 'assistant',
             permissions: staffProfile.permissions || {
@@ -193,11 +262,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
             }
           };
 
-          localStorage.setItem(`clinicpro_user_${activeUid}`, JSON.stringify(activeAssistantProfile));
+          localStorage.setItem(`clinicpro_user_${authUid}`, JSON.stringify(activeAssistantProfile));
           localStorage.setItem('clinicpro_active_session', JSON.stringify(activeAssistantProfile));
           
           try {
-            await setDoc(doc(db, 'users', activeUid), activeAssistantProfile, { merge: true });
+            await setDoc(doc(db, 'users', authUid), activeAssistantProfile, { merge: true });
+            if (staffProfile.uid && staffProfile.uid !== authUid) {
+              await setDoc(doc(db, 'users', staffProfile.uid), { ...staffProfile, authUid }, { merge: true });
+            }
           } catch (dbErr) {
             console.warn('Could not write assistant user doc to Firestore:', dbErr);
           }
@@ -228,19 +300,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                   (retryStaff.initialPassword && retryStaff.initialPassword === inputPassword) ||
                   (retryStaff.password && retryStaff.password === inputPassword)
                 ) {
-                  let activeUid = retryStaff.uid;
-                  try {
-                    if (!auth.currentUser) {
-                      const anonCred = await signInAnonymously(auth);
-                      if (anonCred.user) {
-                        activeUid = anonCred.user.uid;
-                      }
-                    } else {
-                      activeUid = auth.currentUser.uid;
-                    }
-                  } catch (anonErr) {
-                    console.warn('Anonymous auth note (fallback to local session):', anonErr);
-                  }
+                  const { authUid, authEmail } = await authenticateAssistantInFirebase(retryStaff, inputPassword);
 
                   const resolvedClinicId =
                     retryStaff.clinicId && retryStaff.clinicId !== 'system'
@@ -249,7 +309,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
                   const activeAssistantProfile: UserProfile = {
                     ...retryStaff,
-                    uid: activeUid,
+                    uid: authUid,
+                    email: authEmail,
                     clinicId: resolvedClinicId,
                     role: 'assistant',
                     permissions: retryStaff.permissions || {
@@ -267,11 +328,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                     }
                   };
 
-                  localStorage.setItem(`clinicpro_user_${activeUid}`, JSON.stringify(activeAssistantProfile));
+                  localStorage.setItem(`clinicpro_user_${authUid}`, JSON.stringify(activeAssistantProfile));
                   localStorage.setItem('clinicpro_active_session', JSON.stringify(activeAssistantProfile));
                   
                   try {
-                    await setDoc(doc(db, 'users', activeUid), activeAssistantProfile, { merge: true });
+                    await setDoc(doc(db, 'users', authUid), activeAssistantProfile, { merge: true });
+                    if (retryStaff.uid && retryStaff.uid !== authUid) {
+                      await setDoc(doc(db, 'users', retryStaff.uid), { ...retryStaff, authUid }, { merge: true });
+                    }
                   } catch (dbErr) {
                     console.warn('Could not write assistant user doc to Firestore:', dbErr);
                   }

@@ -18,7 +18,11 @@ import {
   DocumentData
 } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from './firebase';
-import { signInAnonymously } from 'firebase/auth';
+import {
+  signInAnonymously,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword
+} from 'firebase/auth';
 import {
   Patient,
   Appointment,
@@ -34,6 +38,54 @@ import {
   DentalLabOrder,
   LabOrderStatus
 } from '../types';
+
+/**
+ * Ensures an active Firebase Auth user is present before sending write requests to Firestore.
+ * Automatically restores or signs in the active assistant or doctor profile from cached session.
+ */
+export async function ensureAuthUser(): Promise<void> {
+  if (auth.currentUser) return;
+
+  try {
+    const sessionStr = localStorage.getItem('clinicpro_active_session');
+    if (sessionStr) {
+      const profile = JSON.parse(sessionStr) as UserProfile;
+      if (profile) {
+        const cleanPhoneDigits = (profile.phone || '').replace(/\D/g, '');
+        const authEmail =
+          profile.email && profile.email.includes('@') && !profile.email.endsWith('.local')
+            ? profile.email
+            : cleanPhoneDigits
+            ? `${cleanPhoneDigits}@clinicpro.local`
+            : `assistant_${profile.uid}@clinicpro.local`;
+
+        const rawPass = profile.password || profile.initialPassword || 'password123';
+        const authPassword = rawPass.length >= 6 ? rawPass : `${rawPass}_cpro123`;
+
+        try {
+          await signInWithEmailAndPassword(auth, authEmail, authPassword);
+          return;
+        } catch {
+          try {
+            await createUserWithEmailAndPassword(auth, authEmail, authPassword);
+            return;
+          } catch {
+            // Ignore create error and proceed to anonymous fallback
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('ensureAuthUser session recovery note:', e);
+  }
+
+  // Fallback to anonymous auth
+  try {
+    await signInAnonymously(auth);
+  } catch (anonErr) {
+    console.warn('Anonymous auth fallback in ensureAuthUser note:', anonErr);
+  }
+}
 
 // ==========================================
 // 1. Super Admin: Clinic Management
@@ -397,6 +449,7 @@ export function subscribePatients(
 
 export async function savePatientToFirestore(patient: Patient) {
   try {
+    await ensureAuthUser();
     await setDoc(doc(db, 'patients', patient.id), patient, { merge: true });
     
     // Only update local cache AFTER successful cloud write
@@ -419,6 +472,7 @@ export async function deletePatientFromFirestore(patientId: string, clinicId?: s
   }
 
   try {
+    await ensureAuthUser();
     await deleteDoc(doc(db, 'patients', patientId));
   } catch (err) {
     handleFirestoreError(err, OperationType.DELETE, `patients/${patientId}`);
@@ -446,6 +500,7 @@ export function subscribeAppointments(clinicId: string, onUpdate: (appointments:
 
 export async function saveAppointmentToFirestore(appointment: Appointment) {
   try {
+    await ensureAuthUser();
     await setDoc(doc(db, 'appointments', appointment.id), appointment, { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `appointments/${appointment.id}`);
@@ -454,6 +509,7 @@ export async function saveAppointmentToFirestore(appointment: Appointment) {
 
 export async function deleteAppointmentFromFirestore(appointmentId: string) {
   try {
+    await ensureAuthUser();
     await deleteDoc(doc(db, 'appointments', appointmentId));
   } catch (err) {
     handleFirestoreError(err, OperationType.DELETE, `appointments/${appointmentId}`);
@@ -462,6 +518,7 @@ export async function deleteAppointmentFromFirestore(appointmentId: string) {
 
 export async function markAppointmentReminderSent(appointmentId: string) {
   try {
+    await ensureAuthUser();
     await updateDoc(doc(db, 'appointments', appointmentId), {
       reminderSent: true,
       reminderSentAt: new Date().toISOString()
@@ -492,6 +549,7 @@ export function subscribeToothRecords(patientId: string, onUpdate: (records: Too
 
 export async function saveToothRecordToFirestore(patientId: string, record: ToothRecord, clinicId: string) {
   try {
+    await ensureAuthUser();
     await setDoc(doc(db, 'patients', patientId, 'toothRecords', record.id), {
       ...record,
       clinicId
@@ -503,6 +561,7 @@ export async function saveToothRecordToFirestore(patientId: string, record: Toot
 
 export async function deleteToothRecordFromFirestore(patientId: string, recordId: string) {
   try {
+    await ensureAuthUser();
     await deleteDoc(doc(db, 'patients', patientId, 'toothRecords', recordId));
   } catch (err) {
     handleFirestoreError(err, OperationType.DELETE, `patients/${patientId}/toothRecords/${recordId}`);
@@ -530,6 +589,7 @@ export function subscribePatientImages(patientId: string, onUpdate: (images: Pat
 
 export async function savePatientImageToFirestore(patientId: string, image: PatientImage, clinicId: string) {
   try {
+    await ensureAuthUser();
     await setDoc(doc(db, 'patients', patientId, 'images', image.id), {
       ...image,
       clinicId
@@ -541,6 +601,7 @@ export async function savePatientImageToFirestore(patientId: string, image: Pati
 
 export async function deletePatientImageFromFirestore(patientId: string, imageId: string) {
   try {
+    await ensureAuthUser();
     await deleteDoc(doc(db, 'patients', patientId, 'images', imageId));
   } catch (err) {
     handleFirestoreError(err, OperationType.DELETE, `patients/${patientId}/images/${imageId}`);
@@ -568,6 +629,7 @@ export function subscribePatientPayments(patientId: string, onUpdate: (payments:
 
 export async function savePaymentToFirestore(patientId: string, payment: Payment, clinicId: string) {
   try {
+    await ensureAuthUser();
     await setDoc(doc(db, 'patients', patientId, 'payments', payment.id), {
       ...payment,
       clinicId
@@ -637,6 +699,7 @@ export function subscribeStaffList(clinicId: string, onUpdate: (staff: UserProfi
 
 export async function saveStaffUserToFirestore(user: UserProfile) {
   try {
+    await ensureAuthUser();
     // 1. Write to Firestore
     await setDoc(doc(db, 'users', user.uid), user, { merge: true });
 
